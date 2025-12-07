@@ -30,13 +30,18 @@
     },
     "plugins": [
       "expo-secure-store",
-      "expo-web-browser"
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.681908599014-r6hdbp82iemnj3e7ogqj374mjd5l5nul"
+        }
+      ]
     ],
     "scheme": "code2u",
     "extra": {
       "googleOAuth": {
         "webClientId": "681908599014-r6hdbp82iemnj3e7ogqj374mjd5l5nul.apps.googleusercontent.com",
-        "androidClientId": "681908599014-7cs8sm1enss3eb2i2bhigo2sq2p5t0sl.apps.googleusercontent.com"
+        "androidClientId": "681908599014-tm7leutsvkhtfr3fkacsq9io500svl4g.apps.googleusercontent.com"
       },
       "eas": {
         "projectId": "cd1f1b7b-c1e8-4d2d-b4f5-b78a11495c73"

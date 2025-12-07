@@ -31,21 +31,27 @@
  */
 
 import { useEffect, useRef, useMemo } from 'react';
-import { useShallow } from 'zustand/react/shallow';
 import { useChatStore } from '../store/chatStore';
 import { ChatService } from '../services/ChatService';
 import { repositories } from '../../../shared/repositories';
 import { SendMessagePayload } from '../../../shared/api/endpoints/ai.api';
 import { getErrorMessage } from '../../../shared/utils/error';
-import {
-  selectChatState,
-  selectChatActions,
-} from '../store/chatSelectors';
 
 export const useAIChat = (problemId: string) => {
-  // Use selectors for optimal re-rendering
-  const state = useChatStore(useShallow(selectChatState));
-  const actions = useChatStore(useShallow(selectChatActions));
+  // Direct store access for stability
+  const messages = useChatStore((state) => state.messages) ?? [];
+  const isLoading = useChatStore((state) => state.isLoading) ?? false;
+  const isSending = useChatStore((state) => state.isSending) ?? false;
+  const error = useChatStore((state) => state.error) ?? null;
+
+  const addMessage = useChatStore((state) => state.addMessage);
+  const setMessages = useChatStore((state) => state.setMessages);
+  const setLoading = useChatStore((state) => state.setLoading);
+  const setSending = useChatStore((state) => state.setSending);
+  const setError = useChatStore((state) => state.setError);
+  const clearError = useChatStore((state) => state.clearError);
+  const clearChat = useChatStore((state) => state.clearChat);
+
   const initialized = useRef(false);
 
   // Create ChatService instance (memoized)
@@ -56,16 +62,16 @@ export const useAIChat = (problemId: string) => {
     if (!problemId || initialized.current) return;
 
     const loadHistory = async () => {
-      actions.setLoading(true);
-      actions.clearError();
+      setLoading(true);
+      clearError();
 
       try {
         const history = await chatService.loadHistory(problemId);
-        actions.setMessages(history);
-      } catch (error) {
-        actions.setError(getErrorMessage(error, 'Failed to load chat history'));
+        setMessages(history);
+      } catch (err) {
+        setError(getErrorMessage(err, 'Failed to load chat history'));
       } finally {
-        actions.setLoading(false);
+        setLoading(false);
       }
     };
 
@@ -76,55 +82,55 @@ export const useAIChat = (problemId: string) => {
     return () => {
       initialized.current = false;
     };
-  }, [problemId, chatService, actions]);
+  }, [problemId, chatService, setLoading, clearError, setMessages, setError]);
 
   // Send message with optimistic update
-  const sendMessage = async (content: string, context?: SendMessagePayload['context']) => {
+  const sendMessageFn = async (content: string, context?: SendMessagePayload['context']) => {
     if (!content.trim()) return;
 
     // Optimistic update: add user message immediately
     const userMessage = chatService.createUserMessage(content);
-    actions.addMessage(userMessage);
-    actions.setSending(true);
-    actions.clearError();
+    addMessage(userMessage);
+    setSending(true);
+    clearError();
 
     try {
       const aiResponse = await chatService.sendMessage(problemId, content, context);
-      actions.addMessage(aiResponse);
-    } catch (error) {
-      actions.setError(getErrorMessage(error, 'Failed to send message'));
+      addMessage(aiResponse);
+    } catch (err) {
+      setError(getErrorMessage(err, 'Failed to send message'));
     } finally {
-      actions.setSending(false);
+      setSending(false);
     }
   };
 
   // Request code review
-  const requestReview = async (code: string) => {
+  const requestReviewFn = async (code: string) => {
     if (!code.trim()) return;
 
     // Add user's review request message
     const userMessage = chatService.createUserMessage(`[코드 리뷰 요청]\n\`\`\`\n${code}\n\`\`\``);
-    actions.addMessage(userMessage);
-    actions.setSending(true);
-    actions.clearError();
+    addMessage(userMessage);
+    setSending(true);
+    clearError();
 
     try {
       const reviewResponse = await chatService.requestReview(problemId, code);
-      actions.addMessage(reviewResponse);
-    } catch (error) {
-      actions.setError(getErrorMessage(error, 'Failed to request code review'));
+      addMessage(reviewResponse);
+    } catch (err) {
+      setError(getErrorMessage(err, 'Failed to request code review'));
     } finally {
-      actions.setSending(false);
+      setSending(false);
     }
   };
 
   return {
-    messages: state.messages,
-    isLoading: state.isLoading,
-    isSending: state.isSending,
-    error: state.error,
-    sendMessage,
-    requestReview,
-    clearChat: actions.clearChat,
+    messages,
+    isLoading,
+    isSending,
+    error,
+    sendMessage: sendMessageFn,
+    requestReview: requestReviewFn,
+    clearChat,
   };
 };

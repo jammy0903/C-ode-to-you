@@ -31,6 +31,16 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 
+// C언어 기본 템플릿
+const C_TEMPLATE = `#include <stdio.h>
+
+int main() {
+    // 여기에 코드를 작성하세요
+
+    return 0;
+}
+`;
+
 interface EditorState {
   code: string;
   language: string;
@@ -51,7 +61,7 @@ interface EditorActions {
 export const useEditorStore = create<EditorState & EditorActions>()(
   immer((set) => ({
     // State
-    code: '',
+    code: C_TEMPLATE, // C언어 기본 템플릿으로 시작
     language: 'c', // Default to C
     isDirty: false,
     isSaving: false,
@@ -80,7 +90,7 @@ export const useEditorStore = create<EditorState & EditorActions>()(
 
     reset: () => {
       set({
-        code: '',
+        code: C_TEMPLATE, // 리셋 시에도 기본 템플릿으로
         language: 'c',
         isDirty: false,
         isSaving: false,

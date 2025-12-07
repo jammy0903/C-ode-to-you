@@ -1,8 +1,9 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { YStack } from 'tamagui';
 import { ScreenContainer } from '../../../shared/components/ScreenContainer';
 import { useUserStats } from '../hooks/useUserStats';
+import { useAuth } from '../../auth/hooks/useAuth';
 import { Loading } from '../../../shared/components/Loading';
 import { colors, spacing } from '../../../shared/styles/theme';
 import { globalStyles } from '../../../shared/styles/globalStyles';
@@ -13,6 +14,28 @@ import { globalStyles } from '../../../shared/styles/globalStyles';
  */
 export const ProfileScreen: React.FC = () => {
   const { stats, activity, isLoading, refresh } = useUserStats();
+  const { logout, isLoggingOut } = useAuth();
+
+  const handleLogout = () => {
+    Alert.alert(
+      '로그아웃',
+      '정말 로그아웃 하시겠습니까?',
+      [
+        { text: '취소', style: 'cancel' },
+        {
+          text: '로그아웃',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await logout();
+            } catch (error) {
+              Alert.alert('오류', '로그아웃에 실패했습니다.');
+            }
+          }
+        },
+      ]
+    );
+  };
 
   if (isLoading) {
     return <Loading fullScreen message="프로필을 불러오는 중..." />;
@@ -39,6 +62,17 @@ export const ProfileScreen: React.FC = () => {
           <Text style={styles.sectionTitle}>활동 기록</Text>
           <Text style={styles.emptyText}>활동 기록이 없습니다</Text>
         </YStack>
+
+        {/* 로그아웃 버튼 */}
+        <TouchableOpacity
+          style={styles.logoutButton}
+          onPress={handleLogout}
+          disabled={isLoggingOut}
+        >
+          <Text style={styles.logoutText}>
+            {isLoggingOut ? '로그아웃 중...' : '로그아웃'}
+          </Text>
+        </TouchableOpacity>
       </YStack>
     </ScreenContainer>
   );
@@ -55,6 +89,19 @@ const styles = StyleSheet.create({
     ...globalStyles.textSecondary,
     textAlign: 'center',
     marginTop: spacing.md,
+  },
+  logoutButton: {
+    backgroundColor: '#ef4444',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: spacing.xl,
+  },
+  logoutText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 

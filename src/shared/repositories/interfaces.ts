@@ -14,7 +14,7 @@
  * - IUserRepository - User data access (getMyStats, getMyActivity, getMySettings, updateMySettings)
  * - IAIRepository - AI chat data access (getChatHistory, sendChatMessage, requestCodeReview)
  * - IGitHubRepository - GitHub integration (connectGitHub, getGitHubStatus, createCommit, syncHistory)
- * - IAuthRepository - Authentication (loginWithKakao, loginWithGoogle, refreshToken, logout)
+ * - IAuthRepository - Authentication (loginWithKakao(code), loginWithGoogle(accessToken), refreshToken, logout)
  * 
  * @types
  * - ProblemListResult - Paginated problem list result
@@ -235,8 +235,9 @@ export interface IAuthRepository {
 
   /**
    * Login with Google
+   * @param accessToken - Google OAuth access token (for Expo Go) or authorization code (for native builds)
    */
-  loginWithGoogle(code: string): Promise<AuthResponse>;
+  loginWithGoogle(accessToken: string): Promise<AuthResponse>;
 
   /**
    * Refresh access token

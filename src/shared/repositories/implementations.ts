@@ -173,13 +173,25 @@ export class ApiGitHubRepository implements IGitHubRepository {
 
 // ==================== Auth Repository ====================
 
+/**
+ * API-based authentication repository implementation
+ * Handles OAuth login flows (Kakao, Google) via backend API
+ */
 export class ApiAuthRepository implements IAuthRepository {
+  /**
+   * Login with Kakao OAuth
+   * @param code - Kakao OAuth authorization code
+   */
   async loginWithKakao(code: string): Promise<AuthResponse> {
     return await authApi.loginWithKakao(code);
   }
 
-  async loginWithGoogle(code: string): Promise<AuthResponse> {
-    return await authApi.loginWithGoogle(code);
+  /**
+   * Login with Google OAuth
+   * @param accessToken - Google OAuth access token (for Expo Go) or authorization code (for native builds)
+   */
+  async loginWithGoogle(accessToken: string): Promise<AuthResponse> {
+    return await authApi.loginWithGoogle(accessToken);
   }
 
   async refreshToken(refreshToken: string): Promise<{ token: string }> {

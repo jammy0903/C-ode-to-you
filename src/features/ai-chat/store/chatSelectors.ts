@@ -28,23 +28,25 @@ export const selectError = (state: ChatState) => state.error;
 
 /** Combined chat state for components */
 export const selectChatState = (state: ChatState) => ({
-  messages: state.messages,
-  isLoading: state.isLoading,
-  isSending: state.isSending,
-  error: state.error,
+  messages: state.messages ?? [],
+  isLoading: state.isLoading ?? false,
+  isSending: state.isSending ?? false,
+  error: state.error ?? null,
 });
 
 // ==================== Derived Selectors ====================
 
 /** Select message count */
-export const selectMessageCount = (state: ChatState) => state.messages.length;
+export const selectMessageCount = (state: ChatState) => (state.messages ?? []).length;
 
 /** Select last message */
-export const selectLastMessage = (state: ChatState) =>
-  state.messages.length > 0 ? state.messages[state.messages.length - 1] : null;
+export const selectLastMessage = (state: ChatState) => {
+  const messages = state.messages ?? [];
+  return messages.length > 0 ? messages[messages.length - 1] : null;
+};
 
 /** Check if chat has messages */
-export const selectHasMessages = (state: ChatState) => state.messages.length > 0;
+export const selectHasMessages = (state: ChatState) => (state.messages ?? []).length > 0;
 
 // ==================== Action Selectors ====================
 

@@ -38,9 +38,19 @@ export const CodeEditorScreen: React.FC<CodeEditorScreenProps> = ({ route, navig
     // }
   };
 
+  const handleProblemPress = () => {
+    navigation.navigate('ProblemDetail', { problemId });
+  };
+
   return (
     <ScreenContainer safeArea padding={false} style={styles.container}>
-      <CodeEditor problemId={problemId} onRun={handleRun} onSubmit={handleSubmit} />
+      <CodeEditor
+        problemId={problemId}
+        problem={problem}
+        onRun={handleRun}
+        onSubmit={handleSubmit}
+        onProblemPress={handleProblemPress}
+      />
     </ScreenContainer>
   );
 };

@@ -21,12 +21,10 @@ export const authApi = {
   /**
    * Login with Google
    * POST /api/auth/google
-   * Supports both code flow (native) and accessToken flow (Expo Go)
+   * Uses idToken for secure authentication (Google recommended)
    */
-  loginWithGoogle: async (accessToken: string): Promise<AuthResponse> => {
-    // In Expo Go, we use token flow
-    // In native builds, this would be an authorization code
-    return apiClient.post<AuthResponse>('/auth/google', { accessToken });
+  loginWithGoogle: async (idToken: string): Promise<AuthResponse> => {
+    return apiClient.post<AuthResponse>('/auth/google', { idToken });
   },
 
   /**
