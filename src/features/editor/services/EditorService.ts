@@ -36,6 +36,15 @@ interface DraftData {
   language: string;
 }
 
+/**
+ * Default draft when no saved draft exists
+ * Following DRY: single source of truth for default values
+ */
+const DEFAULT_DRAFT: DraftData = {
+  code: '',
+  language: 'c',
+};
+
 export class EditorService {
   private submissionRepository: ISubmissionRepository;
   private saveQueue = new Map<string, SaveQueueItem>();
@@ -112,16 +121,18 @@ export class EditorService {
 
   /**
    * Load draft code for a problem
+   * Returns DEFAULT_DRAFT if no saved draft exists (null → default object transformation)
    *
    * @param problemId - Problem identifier
-   * @returns Draft data or null if not found
+   * @returns Draft data (never null - returns default if not found)
    */
-  async loadDraft(problemId: string): Promise<DraftData | null> {
+  async loadDraft(problemId: string): Promise<DraftData> {
     try {
       const draft = await this.submissionRepository.getDraft(problemId);
 
+      // Transform null → default draft (abstraction layer responsibility)
       if (!draft) {
-        return null;
+        return { ...DEFAULT_DRAFT };
       }
 
       return {

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, Animated } from 'react-native';
+import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, Animated, ScrollView } from 'react-native';
 import { YStack, XStack } from 'tamagui';
 import { ScreenContainer } from '../../../shared/components/ScreenContainer';
 import { ChatBubble } from '../components/ChatBubble';
@@ -93,33 +93,32 @@ export const AIChatScreen: React.FC<AIChatScreenProps> = ({ route, navigation })
       {/* 채팅 메시지 리스트 */}
       <KeyboardAvoidingView
         style={styles.chatContainer}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={100}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
       >
-        <YStack
-          flex={1}
-          padding={spacing.md}
-          gap={spacing.md}
-          onLayout={() => {
-            if (scrollViewRef.current) {
-              scrollViewRef.current.scrollToEnd({ animated: false });
-            }
-          }}
+        <ScrollView
+          ref={scrollViewRef}
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
           {!messages || messages.length === 0 ? (
-            <YStack alignItems="center" justifyContent="center" flex={1}>
+            <YStack alignItems="center" justifyContent="center" flex={1} minHeight={300}>
               <Text style={styles.emptyText}>
                 🤖{'\n'}AI에게 질문해보세요!{'\n'}코드 리뷰나 힌트를 받을 수 있습니다.
               </Text>
             </YStack>
           ) : (
-            messages.map((message, index) => (
-              <ChatBubble
-                key={message?.id || `msg-${index}`}
-                message={message}
-                onRequestReview={handleRequestReview}
-              />
-            ))
+            <YStack gap={spacing.md} padding={spacing.md}>
+              {messages.map((message, index) => (
+                <ChatBubble
+                  key={message?.id || `msg-${index}`}
+                  message={message}
+                  onRequestReview={handleRequestReview}
+                />
+              ))}
+            </YStack>
           )}
 
           {/* 전송 중 표시 */}
@@ -139,17 +138,17 @@ export const AIChatScreen: React.FC<AIChatScreenProps> = ({ route, navigation })
               <Text style={styles.typingText}>AI가 입력 중...</Text>
             </XStack>
           )}
-        </YStack>
-      </KeyboardAvoidingView>
+        </ScrollView>
 
-      {/* 채팅 입력 */}
-      {showInput && (
-        <ChatInput
-          onSend={handleSend}
-          disabled={isSending}
-          placeholder="코드에 대해 질문하거나 힌트를 요청하세요..."
-        />
-      )}
+        {/* 채팅 입력 */}
+        {showInput && (
+          <ChatInput
+            onSend={handleSend}
+            disabled={isSending}
+            placeholder="코드에 대해 질문하거나 힌트를 요청하세요..."
+          />
+        )}
+      </KeyboardAvoidingView>
 
       {/* 에러 메시지 */}
       {error && (
@@ -186,6 +185,12 @@ const styles = StyleSheet.create({
   },
   chatContainer: {
     flex: 1,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
   },
   emptyText: {
     ...globalStyles.textSecondary,

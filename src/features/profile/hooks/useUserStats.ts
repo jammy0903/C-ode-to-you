@@ -1,16 +1,16 @@
 /**
  * @file useUserStats.ts
- * @description User statistics hook - composes userStore with auto-fetch
- * 
+ * @description User statistics hook - uses TanStack Query for server state management
+ *
  * @principles
- * - SRP: ✅ Single responsibility: user stats state access
- * - CQS: ✅ Queries (stats, activity) return data, Commands (refresh) mutate
- * - DIP: ✅ Depends on userStore abstraction
- * - Composition: ✅ Composes userStore + useEffect for auto-fetch
- * 
+ * - SRP: ✅ Single responsibility: user stats fetching and caching
+ * - CQS: ✅ Queries via TanStack Query
+ * - DIP: ✅ Depends on repository abstraction
+ * - Composition: ✅ Composes TanStack Query + Repository
+ *
  * @functions
  * - useUserStats(): UserStatsHookReturn - Hook that returns user stats state and actions
- * 
+ *
  * @returns
  * - stats: UserStats | null - User statistics
  * - activity: UserActivity[] - User activity
@@ -19,30 +19,60 @@
  * - refresh(): void - Refresh stats and activity
  */
 
-import { useEffect } from 'react';
-import { useUserStore } from '../store/userStore';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { repositories } from '../../../shared/repositories';
+import { getErrorMessage } from '../../../shared/utils/error';
 
-export const useUserStats = () => {
-  const store = useUserStore();
+// Query keys for user-related queries
+export const userKeys = {
+  all: ['user'] as const,
+  stats: () => ['user', 'stats'] as const,
+  activity: (year?: number) => ['user', 'activity', year] as const,
+  settings: () => ['user', 'settings'] as const,
+};
 
-  useEffect(() => {
-    // Initial fetch if empty
-    if (!store.stats) {
-      store.fetchStats();
-    }
-    if (store.activity.length === 0) {
-      store.fetchActivity();
-    }
-  }, []);
+export const useUserStats = (year?: number) => {
+  const queryClient = useQueryClient();
+
+  // Stats query
+  const statsQuery = useQuery({
+    queryKey: userKeys.stats(),
+    queryFn: () => repositories.user.getMyStats(),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes
+  });
+
+  // Activity query
+  const activityQuery = useQuery({
+    queryKey: userKeys.activity(year),
+    queryFn: () => repositories.user.getMyActivity(year),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes
+  });
+
+  // Combined loading state
+  const isLoading = statsQuery.isLoading || activityQuery.isLoading;
+
+  // Combined error
+  const error =
+    statsQuery.error || activityQuery.error
+      ? getErrorMessage(
+          statsQuery.error || activityQuery.error,
+          'Failed to load user data'
+        )
+      : null;
+
+  // Refresh both queries
+  const refresh = () => {
+    queryClient.invalidateQueries({ queryKey: userKeys.stats() });
+    queryClient.invalidateQueries({ queryKey: userKeys.activity(year) });
+  };
 
   return {
-    stats: store.stats,
-    activity: store.activity,
-    isLoading: store.isLoading,
-    error: store.error,
-    refresh: () => {
-      store.fetchStats();
-      store.fetchActivity();
-    },
+    stats: statsQuery.data ?? null,
+    activity: activityQuery.data ?? [],
+    isLoading,
+    error,
+    refresh,
   };
 };

@@ -54,13 +54,8 @@ export class ApiClient {
         );
       }
 
-      // Return unwrapped data
-      const data = response.data.data;
-      if (data === null || data === undefined) {
-        throw new ApiError('Invalid API response: data is null or undefined', response.status);
-      }
-
-      return data;
+      // Return unwrapped data (null is valid for some endpoints like getDraft)
+      return response.data.data as TResponse;
     } catch (error) {
       // Re-throw ApiError as-is
       if (error instanceof ApiError) {

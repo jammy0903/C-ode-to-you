@@ -235,9 +235,9 @@ export interface IAuthRepository {
 
   /**
    * Login with Google
-   * @param accessToken - Google OAuth access token (for Expo Go) or authorization code (for native builds)
+   * @param idToken - Google OAuth ID token (JWT from Google Sign-In)
    */
-  loginWithGoogle(accessToken: string): Promise<AuthResponse>;
+  loginWithGoogle(idToken: string): Promise<AuthResponse>;
 
   /**
    * Refresh access token

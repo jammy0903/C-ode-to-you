@@ -1,73 +1,41 @@
 /**
  * @file submissionSelectors.ts
- * @description Memoized selectors for submissionStore
+ * @description Memoized selectors for submissionStore (client-side UI state only)
  *
  * @principles
- * - Performance: ✅ Selectors prevent unnecessary re-renders
- * - SRP: ✅ Each selector has a single purpose
- * - Reusability: ✅ Selectors can be shared across components/hooks
+ * - Performance: Selectors prevent unnecessary re-renders
+ * - SRP: Each selector has a single purpose
+ * - Reusability: Selectors can be shared across components/hooks
+ *
+ * @note
+ * Server state selectors have been removed. Use TanStack Query hooks instead:
+ * - useSubmission() - Submission operations and history
+ * - useSubmitCode() - Submission with validation
  */
 
 import { useSubmissionStore } from './submissionStore';
 
-type SubmissionState = ReturnType<typeof useSubmissionStore.getState>;
+type SubmissionUIState = ReturnType<typeof useSubmissionStore.getState>;
 
-// ==================== State Selectors ====================
+// ==================== UI State Selectors ====================
 
-/** Select current submission */
-export const selectCurrentSubmission = (state: SubmissionState) => state.currentSubmission;
+/** Select show history flag */
+export const selectShowHistory = (state: SubmissionUIState) => state.showHistory;
 
-/** Select submitting state */
-export const selectIsSubmitting = (state: SubmissionState) => state.isSubmitting;
+/** Select active tab */
+export const selectSelectedTab = (state: SubmissionUIState) => state.selectedTab;
 
-/** Select error state */
-export const selectError = (state: SubmissionState) => state.error;
-
-/** Select submission history */
-export const selectHistory = (state: SubmissionState) => state.history;
-
-/** Combined submission state for components */
-export const selectSubmissionState = (state: SubmissionState) => ({
-  currentSubmission: state.currentSubmission,
-  isSubmitting: state.isSubmitting,
-  error: state.error,
-  history: state.history,
+/** Combined UI state for components */
+export const selectSubmissionUIState = (state: SubmissionUIState) => ({
+  showHistory: state.showHistory,
+  selectedTab: state.selectedTab,
 });
-
-// ==================== Derived Selectors ====================
-
-/** Select current submission status */
-export const selectSubmissionStatus = (state: SubmissionState) =>
-  state.currentSubmission?.status ?? null;
-
-/** Select current submission verdict */
-export const selectSubmissionVerdict = (state: SubmissionState) =>
-  state.currentSubmission?.verdict ?? null;
-
-/** Check if submission is pending (waiting for judgment) */
-export const selectIsPending = (state: SubmissionState) =>
-  state.currentSubmission?.status === 'pending' ||
-  state.currentSubmission?.status === 'judging';
-
-/** Check if submission is complete (judged) */
-export const selectIsComplete = (state: SubmissionState) =>
-  state.currentSubmission?.status !== 'pending' &&
-  state.currentSubmission?.status !== 'judging';
-
-/** Check if submission was accepted */
-export const selectIsAccepted = (state: SubmissionState) =>
-  state.currentSubmission?.verdict === 'accepted';
-
-/** Select history count */
-export const selectHistoryCount = (state: SubmissionState) => state.history.length;
 
 // ==================== Action Selectors ====================
 
 /** Select store actions (stable references) */
-export const selectSubmissionActions = (state: SubmissionState) => ({
-  submitCode: state.submitCode,
-  startPolling: state.startPolling,
-  stopPolling: state.stopPolling,
-  fetchHistory: state.fetchHistory,
-  resetCurrentSubmission: state.resetCurrentSubmission,
+export const selectSubmissionUIActions = (state: SubmissionUIState) => ({
+  setShowHistory: state.setShowHistory,
+  setSelectedTab: state.setSelectedTab,
+  reset: state.reset,
 });
