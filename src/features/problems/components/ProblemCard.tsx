@@ -4,6 +4,12 @@ import { YStack, XStack } from 'tamagui';
 import { Problem } from '../../../shared/types/api.types';
 import { colors, spacing, borderRadius, fontSize } from '../../../shared/styles/theme';
 import { globalStyles } from '../../../shared/styles/globalStyles';
+import {
+  getTierColor,
+  getStatusColor,
+  getStatusIcon,
+  calculateAcceptanceRate,
+} from '../utils/problemUtils';
 
 interface ProblemCardProps {
   problem: Problem;
@@ -15,26 +21,6 @@ interface ProblemCardProps {
  * 문제 번호, 제목, 난이도, 태그 등을 표시
  */
 export const ProblemCard: React.FC<ProblemCardProps> = ({ problem, onPress }) => {
-  const getTierColor = (difficulty: string) => {
-    if (difficulty.includes('bronze')) return colors.tierBronze;
-    if (difficulty.includes('silver')) return colors.tierSilver;
-    if (difficulty.includes('gold')) return colors.tierGold;
-    if (difficulty.includes('platinum')) return colors.tierPlatinum;
-    if (difficulty.includes('diamond')) return colors.tierDiamond;
-    if (difficulty.includes('ruby')) return colors.tierRuby;
-    return colors.textSecondary;
-  };
-
-  const getStatusColor = (status?: string) => {
-    switch (status) {
-      case 'solved':
-        return colors.success;
-      case 'attempted':
-        return colors.accent;
-      default:
-        return colors.textTertiary;
-    }
-  };
 
   return (
     <TouchableOpacity
@@ -55,7 +41,7 @@ export const ProblemCard: React.FC<ProblemCardProps> = ({ problem, onPress }) =>
         {problem.userStatus && (
           <View style={[styles.statusBadge, { backgroundColor: getStatusColor(problem.userStatus) }]}>
             <Text style={styles.statusText}>
-              {problem.userStatus === 'solved' ? '✓' : problem.userStatus === 'attempted' ? '○' : '○'}
+              {getStatusIcon(problem.userStatus)}
             </Text>
           </View>
         )}
@@ -74,7 +60,9 @@ export const ProblemCard: React.FC<ProblemCardProps> = ({ problem, onPress }) =>
 
       {/* 통계 */}
       <XStack marginTop={spacing.sm} gap={spacing.md}>
-        <Text style={styles.stats}>정답률: {((problem.acceptedCount / problem.submissionCount) * 100).toFixed(1)}%</Text>
+        <Text style={styles.stats}>
+          정답률: {calculateAcceptanceRate(problem.acceptedCount, problem.submissionCount)}%
+        </Text>
         {problem.userAttempts !== undefined && (
           <Text style={styles.stats}>시도: {problem.userAttempts}회</Text>
         )}

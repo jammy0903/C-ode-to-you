@@ -98,9 +98,9 @@ describe('AuthService', () => {
       mockAuthRepo.loginWithGoogle.mockResolvedValue(googleResponse);
       mockTokenService.saveTokens.mockResolvedValue(undefined);
 
-      const result = await authService.loginWithGoogle('google-auth-code');
+      const result = await authService.loginWithGoogle('google-access-token');
 
-      expect(mockAuthRepo.loginWithGoogle).toHaveBeenCalledWith('google-auth-code');
+      expect(mockAuthRepo.loginWithGoogle).toHaveBeenCalledWith('google-access-token');
       expect(mockTokenService.saveTokens).toHaveBeenCalledWith('access-token-123', 'refresh-token-456');
       expect(result.isAuthenticated).toBe(true);
     });
@@ -108,7 +108,7 @@ describe('AuthService', () => {
     it('should throw error on login failure', async () => {
       mockAuthRepo.loginWithGoogle.mockRejectedValue(new Error('Google auth failed'));
 
-      await expect(authService.loginWithGoogle('invalid-code')).rejects.toThrow('Google auth failed');
+      await expect(authService.loginWithGoogle('invalid-token')).rejects.toThrow('Google auth failed');
     });
   });
 

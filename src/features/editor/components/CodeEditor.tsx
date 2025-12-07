@@ -3,14 +3,19 @@ import { View, Text, StyleSheet, Animated, Dimensions } from 'react-native';
 import { YStack, XStack } from 'tamagui';
 import { CodeMirrorWebView } from './CodeMirrorWebView';
 import { EditorToolbar } from './EditorToolbar';
+import { ProblemHeaderBar } from '../../problems/components/ProblemHeaderBar';
 import { useCodeEditor } from '../hooks/useCodeEditor';
+import { useProblemDetail } from '../../problems/hooks/useProblemDetail';
 import { colors, spacing, createShadow, createTextShadow } from '../../../shared/styles/theme';
 import { globalStyles } from '../../../shared/styles/globalStyles';
+import { Problem } from '../../../shared/types/api.types';
 
 interface CodeEditorProps {
   problemId: string;
+  problem?: Problem | null;
   onRun?: () => void;
   onSubmit?: () => void;
+  onProblemPress?: () => void;
 }
 
 const { width } = Dimensions.get('window');
@@ -19,8 +24,19 @@ const { width } = Dimensions.get('window');
  * 미래지향적인 코드 에디터 화면
  * 네온 효과, 홀로그램 느낌의 디자인
  */
-export const CodeEditor: React.FC<CodeEditorProps> = ({ problemId, onRun, onSubmit }) => {
+export const CodeEditor: React.FC<CodeEditorProps> = ({
+  problemId,
+  problem: externalProblem,
+  onRun,
+  onSubmit,
+  onProblemPress,
+}) => {
   const { code, language, setCode, setLanguage, isDirty, lastSavedAt } = useCodeEditor(problemId);
+
+  // 외부에서 problem이 전달되면 fetch하지 않음
+  const shouldFetch = !externalProblem;
+  const { problem: fetchedProblem, isLoading: isProblemLoading } = useProblemDetail(problemId);
+  const problem = externalProblem ?? fetchedProblem;
   const glowAnimation = useRef(new Animated.Value(0)).current;
   const scanlineAnimation = useRef(new Animated.Value(0)).current;
 
@@ -42,12 +58,12 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({ problemId, onRun, onSubm
     ).start();
   }, []);
 
-  // 스캔라인 애니메이션 (홀로그램 효과)
+  // 스캔라인 애니메이션 (세련된 그라데이션 스캔 효과)
   useEffect(() => {
     Animated.loop(
       Animated.timing(scanlineAnimation, {
         toValue: 1,
-        duration: 3000,
+        duration: 8000, // 더 느리게 - 부드럽고 세련됨
         useNativeDriver: true,
       })
     ).start();
@@ -55,22 +71,28 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({ problemId, onRun, onSubm
 
   const glowOpacity = glowAnimation.interpolate({
     inputRange: [0, 1],
-    outputRange: [0.3, 0.7],
+    outputRange: [0.2, 0.4], // 더 은은하게
   });
 
   const scanlineTranslateY = scanlineAnimation.interpolate({
     inputRange: [0, 1],
-    outputRange: [-100, 1000],
+    outputRange: [-50, 800],
+  });
+
+  const scanlineOpacity = scanlineAnimation.interpolate({
+    inputRange: [0, 0.1, 0.9, 1],
+    outputRange: [0, 0.15, 0.15, 0], // 부드럽게 페이드 인/아웃
   });
 
   return (
     <View style={styles.container}>
-      {/* 홀로그램 스캔라인 효과 */}
+      {/* 홀로그램 스캔라인 효과 - 세련된 그라데이션 */}
       <Animated.View
         style={[
           styles.scanline,
           {
             transform: [{ translateY: scanlineTranslateY }],
+            opacity: scanlineOpacity,
           },
         ]}
       />
@@ -83,6 +105,13 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({ problemId, onRun, onSubm
             opacity: glowOpacity,
           },
         ]}
+      />
+
+      {/* 문제 정보 헤더 (상단 고정) */}
+      <ProblemHeaderBar
+        problem={problem}
+        isLoading={isProblemLoading}
+        onPress={onProblemPress}
       />
 
       {/* 에디터 툴바 */}
@@ -136,10 +165,14 @@ const styles = StyleSheet.create({
   scanline: {
     position: 'absolute',
     width: '100%',
-    height: 2,
-    backgroundColor: 'rgba(0, 255, 255, 0.3)',
+    height: 60, // 더 넓은 그라데이션 밴드
     zIndex: 1000,
-    ...createShadow(0, 0, 10, 0, '#00ffff', 1),
+    // 그라데이션 효과를 위한 배경 (위아래로 페이드)
+    backgroundColor: 'transparent',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0, 255, 255, 0.2)',
+    // 은은한 그라데이션 느낌의 그림자
+    ...createShadow(0, 0, 30, 0, '#00ffff', 0.15),
   },
   glowBorder: {
     position: 'absolute',

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { YStack } from 'tamagui';
 import { ScreenContainer } from '../../../shared/components/ScreenContainer';
@@ -11,18 +11,31 @@ import { globalStyles } from '../../../shared/styles/globalStyles';
 
 /**
  * 로그인 화면
- * Kakao, Google OAuth 로그인 지원
+ * 
+ * @description
+ * Kakao, Google OAuth 로그인을 지원하는 인증 화면입니다.
+ * 
+ * @features
+ * - Kakao OAuth 로그인 (현재 mock 코드 사용, 실제 SDK 연동 필요)
+ * - Google OAuth 로그인 (expo-auth-session 사용)
+ * - 로그인 상태 관리 (useAuth, useGoogleAuth 훅 활용)
+ * - 에러 처리 및 로딩 상태 표시
+ * 
+ * @architecture
+ * - useAuth: 백엔드 인증 처리 및 세션 관리
+ * - useGoogleAuth: Google OAuth 플로우 처리
+ * - 상태 관리: 훅에서 제공하는 상태를 직접 활용 (중복 상태 제거)
+ * 
+ * @note
+ * - 로그인 진행 중에는 전체 화면 로딩 표시
+ * - Google 로그인 취소 시 에러 메시지 표시하지 않음
+ * - 에러는 각 훅의 error 상태로 관리됨
  */
 export const LoginScreen: React.FC = () => {
-  const { loginWithKakao, loginWithGoogle, isLoading, error } = useAuth();
-  const { signInWithGoogle, isLoading: isGoogleOAuthLoading, isReady: isGoogleReady } = useGoogleAuth();
-  const [isKakaoLoading, setIsKakaoLoading] = useState(false);
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-  const [localError, setLocalError] = useState<string | null>(null);
+  const { loginWithKakao, loginWithGoogle, isLoggingIn, error: authError } = useAuth();
+  const { signInWithGoogle, isLoading: isGoogleOAuthLoading, error: googleOAuthError, isReady: isGoogleReady } = useGoogleAuth();
 
   const handleKakaoLogin = async () => {
-    setIsKakaoLoading(true);
-    setLocalError(null);
     try {
       // TODO: 실제 Kakao OAuth SDK 연동
       // 임시로 테스트용 코드 전달
@@ -30,43 +43,34 @@ export const LoginScreen: React.FC = () => {
       await loginWithKakao(mockCode);
     } catch (err) {
       console.error('Kakao login error:', err);
-      setLocalError('카카오 로그인에 실패했습니다.');
-    } finally {
-      setIsKakaoLoading(false);
+      // 에러는 useAuth의 error로 처리됨
     }
   };
 
   const handleGoogleLogin = async () => {
-    setIsGoogleLoading(true);
-    setLocalError(null);
-
-    // TODO: Expo Go에서는 COOP 제한으로 OAuth 불가
-    // 개발 빌드 또는 프로덕션 빌드에서 테스트 필요
-    setLocalError('Expo Go에서는 Google 로그인이 지원되지 않습니다.\n개발 빌드(EAS Build)를 사용해주세요.');
-    setIsGoogleLoading(false);
-
-    // 원래 코드 (개발 빌드에서 사용)
-    /*
     try {
+      // 1. Google OAuth로 idToken 획득
       const result = await signInWithGoogle();
 
-      if (result.accessToken && result.user) {
-        await loginWithGoogle(result.accessToken);
-      } else {
-        throw new Error('No access token or user info received');
+      console.log('[LoginScreen] Google OAuth result:', {
+        hasIdToken: !!result.idToken,
+        user: result.user,
+      });
+
+      if (!result.idToken) {
+        throw new Error('No idToken received from Google');
       }
-    } catch (err) {
-      console.error('Google login error:', err);
-      if (err instanceof Error && err.message !== 'Google sign in was cancelled') {
-        setLocalError('Google 로그인에 실패했습니다.');
-      }
-    } finally {
-      setIsGoogleLoading(false);
+
+      // 2. 백엔드로 idToken만 전송 (보안 권장 방식)
+      console.log('[LoginScreen] Sending idToken to backend...');
+      await loginWithGoogle(result.idToken);
+    } catch (err: any) {
+      console.error('[LoginScreen] Google login error:', err.message || err);
     }
-    */
   };
 
-  if (isLoading) {
+  // 로그인 진행 중일 때만 전체 화면 로딩 표시
+  if (isLoggingIn) {
     return <Loading fullScreen message="로그인 중..." />;
   }
 
@@ -92,7 +96,8 @@ export const LoginScreen: React.FC = () => {
                 onPress={handleKakaoLogin}
                 variant="primary"
                 size="large"
-                loading={isKakaoLoading}
+                loading={isLoggingIn}
+                disabled={isLoggingIn}
                 fullWidth
                 style={styles.kakaoButton}
               />
@@ -103,15 +108,18 @@ export const LoginScreen: React.FC = () => {
                 onPress={handleGoogleLogin}
                 variant="outline"
                 size="large"
-                loading={isGoogleLoading || isGoogleOAuthLoading}
-                disabled={!isGoogleReady}
+                loading={isGoogleOAuthLoading || isLoggingIn}
+                disabled={!isGoogleReady || isLoggingIn}
                 fullWidth
               />
             </YStack>
 
             {/* 에러 메시지 */}
-            {(error || localError) && (
-              <Text style={styles.errorText}>{error || localError}</Text>
+            {authError && (
+              <Text style={styles.errorText}>{authError}</Text>
+            )}
+            {googleOAuthError && googleOAuthError !== 'Google sign in was cancelled' && (
+              <Text style={styles.errorText}>{googleOAuthError}</Text>
             )}
 
             {/* 약관/개인정보 처리방침 링크 (선택) */}

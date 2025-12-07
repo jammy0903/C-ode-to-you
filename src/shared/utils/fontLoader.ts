@@ -37,14 +37,21 @@ import {
 import { useEffect } from 'react';
 import * as SplashScreen from 'expo-splash-screen';
 export const useFontLoader = () => {
-  // Google Fonts Orbitron의 공식 이름으로 매핑
+  // TEMP FIX: Development Build에서 폰트 로딩 이슈로 인해 비활성화
+  // 시스템 기본 폰트 사용
+  useEffect(() => {
+    SplashScreen.hideAsync();
+  }, []);
+
+  return { fontsLoaded: true, fontError: null };
+
+  /* 원래 코드 - 폰트 문제 해결 후 복원
   const [fontsLoaded, fontError] = useFonts({
     'Orbitron-Regular': Orbitron_400Regular,
     'Orbitron-Medium': Orbitron_500Medium,
     'Orbitron-SemiBold': Orbitron_600SemiBold,
     'Orbitron-Bold': Orbitron_700Bold,
     'Orbitron-Black': Orbitron_900Black,
-    // 기본 Orbitron 이름도 Regular로 매핑 (웹 호환성)
     'Orbitron': Orbitron_400Regular,
   });
 
@@ -54,7 +61,6 @@ export const useFontLoader = () => {
     }
   }, [fontsLoaded, fontError]);
 
-  // 에러가 발생하면 콘솔에 출력
   useEffect(() => {
     if (fontError) {
       console.error('Font loading error:', fontError);
@@ -62,5 +68,6 @@ export const useFontLoader = () => {
   }, [fontError]);
 
   return { fontsLoaded: fontsLoaded || false, fontError };
+  */
 };
 

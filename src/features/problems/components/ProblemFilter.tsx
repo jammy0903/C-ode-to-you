@@ -4,6 +4,7 @@ import { XStack, YStack } from 'tamagui';
 import { GetProblemsParams } from '../../../shared/api/endpoints/problems.api';
 import { colors, spacing, borderRadius } from '../../../shared/styles/theme';
 import { globalStyles } from '../../../shared/styles/globalStyles';
+import { getStatusText } from '../utils/problemUtils';
 
 interface ProblemFilterProps {
   filters: GetProblemsParams;
@@ -52,7 +53,7 @@ export const ProblemFilter: React.FC<ProblemFilterProps> = ({ filters, onFilterC
             onPress={() => onFilterChange({ status: filters.status === status ? undefined : status })}
           >
             <Text style={styles.filterChipText}>
-              {status === 'solved' ? '해결' : status === 'attempted' ? '시도' : '미해결'}
+              {getStatusText(status)}
             </Text>
           </TouchableOpacity>
         ))}

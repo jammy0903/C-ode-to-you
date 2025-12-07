@@ -24,6 +24,15 @@ interface ProblemDetailScreenProps {
 export const ProblemDetailScreen: React.FC<ProblemDetailScreenProps> = ({ route, navigation }) => {
   const { problemId } = route.params;
   const { problem, isLoading, error } = useProblemDetail(problemId);
+  const [showChatButton, setShowChatButton] = useState(true);
+
+  const handleChatPress = () => {
+    navigation.navigate('AIChat', { problemId });
+  };
+
+  const handleStartCoding = () => {
+    navigation.navigate('CodeEditor', { problemId });
+  };
 
   if (isLoading) {
     return <Loading fullScreen message="문제를 불러오는 중..." />;
@@ -36,16 +45,6 @@ export const ProblemDetailScreen: React.FC<ProblemDetailScreenProps> = ({ route,
       </ScreenContainer>
     );
   }
-
-  const [showChatButton, setShowChatButton] = useState(true);
-
-  const handleChatPress = () => {
-    navigation.navigate('AIChat', { problemId });
-  };
-
-  const handleStartCoding = () => {
-    navigation.navigate('CodeEditor', { problemId });
-  };
 
   return (
     <ScreenContainer>

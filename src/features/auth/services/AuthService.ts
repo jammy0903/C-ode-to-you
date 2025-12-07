@@ -17,7 +17,8 @@
  * @usage
  * ```typescript
  * const authService = new AuthService(repositories.auth, tokenService);
- * const user = await authService.loginWithKakao('oauth-code');
+ * const user = await authService.loginWithKakao('kakao-oauth-code');
+ * const user = await authService.loginWithGoogle('google-access-token');
  * const isAuth = await authService.checkSession();
  * await authService.logout();
  * ```
@@ -34,7 +35,7 @@ export interface LoginResult {
 
 export interface IAuthService {
   loginWithKakao(code: string): Promise<LoginResult>;
-  loginWithGoogle(code: string): Promise<LoginResult>;
+  loginWithGoogle(accessToken: string): Promise<LoginResult>;
   logout(): Promise<void>;
   checkSession(): Promise<{ isAuthenticated: boolean }>;
 }
@@ -70,12 +71,12 @@ export class AuthService implements IAuthService {
   /**
    * Login with Google OAuth
    *
-   * @param code - OAuth authorization code
+   * @param accessToken - Google OAuth access token (for Expo Go) or authorization code (for native builds)
    * @returns Login result with user data
    */
-  async loginWithGoogle(code: string): Promise<LoginResult> {
+  async loginWithGoogle(accessToken: string): Promise<LoginResult> {
     try {
-      const { token, refreshToken, user } = await this.authRepository.loginWithGoogle(code);
+      const { token, refreshToken, user } = await this.authRepository.loginWithGoogle(accessToken);
 
       await this.tokenService.saveTokens(token, refreshToken);
 

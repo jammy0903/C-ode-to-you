@@ -106,16 +106,16 @@ export const AIChatScreen: React.FC<AIChatScreenProps> = ({ route, navigation })
             }
           }}
         >
-          {messages.length === 0 ? (
+          {!messages || messages.length === 0 ? (
             <YStack alignItems="center" justifyContent="center" flex={1}>
               <Text style={styles.emptyText}>
                 🤖{'\n'}AI에게 질문해보세요!{'\n'}코드 리뷰나 힌트를 받을 수 있습니다.
               </Text>
             </YStack>
           ) : (
-            messages.map((message) => (
+            messages.map((message, index) => (
               <ChatBubble
-                key={message.id}
+                key={message?.id || `msg-${index}`}
                 message={message}
                 onRequestReview={handleRequestReview}
               />
