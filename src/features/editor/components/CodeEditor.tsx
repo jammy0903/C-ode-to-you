@@ -1,8 +1,10 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, Animated, Dimensions } from 'react-native';
 import { YStack, XStack } from 'tamagui';
 import { CodeMirrorWebView } from './CodeMirrorWebView';
 import { EditorToolbar } from './EditorToolbar';
+import { EditorTabs, EditorTabType } from './EditorTabs';
+import { EditorChatPanel } from './EditorChatPanel';
 import { ProblemHeaderBar } from '../../problems/components/ProblemHeaderBar';
 import { useCodeEditor } from '../hooks/useCodeEditor';
 import { useProblemDetail } from '../../problems/hooks/useProblemDetail';
@@ -33,12 +35,31 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
 }) => {
   const { code, language, setCode, setLanguage, isDirty, lastSavedAt } = useCodeEditor(problemId);
 
+  // 탭 상태
+  const [activeTab, setActiveTab] = useState<EditorTabType>('code');
+  const [hasUnreadMessages, setHasUnreadMessages] = useState(false);
+
   // 외부에서 problem이 전달되면 fetch하지 않음
   const shouldFetch = !externalProblem;
   const { problem: fetchedProblem, isLoading: isProblemLoading } = useProblemDetail(problemId);
   const problem = externalProblem ?? fetchedProblem;
   const glowAnimation = useRef(new Animated.Value(0)).current;
   const scanlineAnimation = useRef(new Animated.Value(0)).current;
+
+  // 탭 변경 핸들러
+  const handleTabChange = useCallback((tab: EditorTabType) => {
+    setActiveTab(tab);
+    if (tab === 'chat') {
+      setHasUnreadMessages(false);
+    }
+  }, []);
+
+  // 새 메시지 수신 핸들러
+  const handleNewMessage = useCallback(() => {
+    if (activeTab !== 'chat') {
+      setHasUnreadMessages(true);
+    }
+  }, [activeTab]);
 
   // 네온 글로우 애니메이션
   useEffect(() => {
@@ -114,43 +135,64 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         onPress={onProblemPress}
       />
 
-      {/* 에디터 툴바 */}
-      <EditorToolbar
-        language={language}
-        onLanguageChange={setLanguage}
-        onRun={onRun}
-        onSubmit={onSubmit}
-        isDirty={isDirty}
-        lastSavedAt={lastSavedAt}
+      {/* 탭 바 (코드/AI 채팅) */}
+      <EditorTabs
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
+        hasUnreadMessages={hasUnreadMessages}
       />
 
-      {/* 코드 에디터 영역 */}
-      <View style={styles.editorContainer}>
-        <CodeMirrorWebView
-          code={code}
-          language={language}
-          onChange={setCode}
-          theme="cyberpunk"
-        />
-      </View>
+      {/* 코드 에디터 탭 */}
+      {activeTab === 'code' && (
+        <>
+          {/* 에디터 툴바 */}
+          <EditorToolbar
+            language={language}
+            onLanguageChange={setLanguage}
+            onRun={onRun}
+            onSubmit={onSubmit}
+            isDirty={isDirty}
+            lastSavedAt={lastSavedAt}
+          />
 
-      {/* 상태 바 (하단) */}
-      <XStack style={styles.statusBar} justifyContent="space-between" alignItems="center">
-        <XStack gap={spacing.md} alignItems="center">
-          {isDirty && (
-            <View style={styles.statusIndicator}>
-              <View style={styles.statusDot} />
-              <Animated.Text style={[styles.statusText, { opacity: glowOpacity }]}>
-                저장 중...
-              </Animated.Text>
-            </View>
-          )}
-          {lastSavedAt && !isDirty && (
-            <Text style={styles.statusText}>저장됨</Text>
-          )}
-        </XStack>
-        <Text style={styles.statusText}>C 언어</Text>
-      </XStack>
+          {/* 코드 에디터 영역 */}
+          <View style={styles.editorContainer}>
+            <CodeMirrorWebView
+              code={code}
+              language={language}
+              onChange={setCode}
+              theme="cyberpunk"
+            />
+          </View>
+
+          {/* 상태 바 (하단) */}
+          <XStack style={styles.statusBar} justifyContent="space-between" alignItems="center">
+            <XStack gap={spacing.md} alignItems="center">
+              {isDirty && (
+                <View style={styles.statusIndicator}>
+                  <View style={styles.statusDot} />
+                  <Animated.Text style={[styles.statusText, { opacity: glowOpacity }]}>
+                    저장 중...
+                  </Animated.Text>
+                </View>
+              )}
+              {lastSavedAt && !isDirty && (
+                <Text style={styles.statusText}>저장됨</Text>
+              )}
+            </XStack>
+            <Text style={styles.statusText}>C 언어</Text>
+          </XStack>
+        </>
+      )}
+
+      {/* AI 채팅 탭 */}
+      {activeTab === 'chat' && (
+        <EditorChatPanel
+          problemId={problemId}
+          currentCode={code}
+          onNewMessage={handleNewMessage}
+        />
+      )}
     </View>
   );
 };
