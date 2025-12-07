@@ -1,136 +1,151 @@
 /**
  * @file useAIChat.ts
- * @description AI chat hook - orchestrates ChatService + chatStore
+ * @description AI chat hook using TanStack Query
  *
  * @principles
- * - SRP: ✅ Single responsibility: orchestrate chat state + service
- * - CQS: ✅ Queries (messages) return data, Commands (sendMessage, requestReview) mutate
- * - DIP: ✅ Depends on ChatService and chatStore abstractions
- * - Composition: ✅ Composes Store (state) + Service (logic) + useEffect for auto-load
+ * - SRP: ✅ Single responsibility: orchestrate chat state and actions
+ * - CQS: ✅ Queries (history) separated from Commands (sendMessage mutation)
+ * - DIP: ✅ Depends on ChatService interface
  *
  * @architecture
- * Hook → ChatService (business logic) + chatStore (state)
- *
- * @functions
- * - useAIChat(problemId: string): AIChatHookReturn - Hook that returns chat state and actions
- *
- * @returns
- * - messages: ChatMessage[] - Chat messages
- * - isLoading: boolean - Loading history
- * - isSending: boolean - Sending message
- * - error: string | null - Error message
- * - sendMessage(content: string, context?: any): Promise<void> - Send message with optimistic update
- * - requestReview(code: string): Promise<void> - Request code review
- * - clearChat(): void - Clear chat messages
- *
- * @note
- * This hook demonstrates Phase 2.2 architecture:
- * - Store: Pure state management (chatStore)
- * - Service: Business logic (ChatService)
- * - Hook: Orchestration layer (this file)
+ * Hook → TanStack Query (server state) + ChatService (business logic)
  */
 
-import { useEffect, useRef, useMemo } from 'react';
-import { useChatStore } from '../store/chatStore';
+import { useState, useMemo, useCallback } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChatService } from '../services/ChatService';
 import { repositories } from '../../../shared/repositories';
+import { ChatMessage } from '../../../shared/types/api.types';
 import { SendMessagePayload } from '../../../shared/api/endpoints/ai.api';
 import { getErrorMessage } from '../../../shared/utils/error';
 
+// Query keys
+export const chatKeys = {
+  all: ['chat'] as const,
+  history: (problemId: string) => [...chatKeys.all, 'history', problemId] as const,
+};
+
 export const useAIChat = (problemId: string) => {
-  // Direct store access for stability
-  const messages = useChatStore((state) => state.messages) ?? [];
-  const isLoading = useChatStore((state) => state.isLoading) ?? false;
-  const isSending = useChatStore((state) => state.isSending) ?? false;
-  const error = useChatStore((state) => state.error) ?? null;
+  const queryClient = useQueryClient();
 
-  const addMessage = useChatStore((state) => state.addMessage);
-  const setMessages = useChatStore((state) => state.setMessages);
-  const setLoading = useChatStore((state) => state.setLoading);
-  const setSending = useChatStore((state) => state.setSending);
-  const setError = useChatStore((state) => state.setError);
-  const clearError = useChatStore((state) => state.clearError);
-  const clearChat = useChatStore((state) => state.clearChat);
-
-  const initialized = useRef(false);
+  // Local state for optimistic messages (before server confirms)
+  const [localMessages, setLocalMessages] = useState<ChatMessage[]>([]);
 
   // Create ChatService instance (memoized)
   const chatService = useMemo(() => new ChatService(repositories.ai), []);
 
-  // Load history on mount (only once per problemId)
-  useEffect(() => {
-    if (!problemId || initialized.current) return;
+  // Load chat history
+  const historyQuery = useQuery({
+    queryKey: chatKeys.history(problemId),
+    queryFn: () => chatService.loadHistory(problemId),
+    enabled: !!problemId,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    initialData: [],
+  });
 
-    const loadHistory = async () => {
-      setLoading(true);
-      clearError();
+  // Combine server messages with local optimistic messages
+  const messages = useMemo(() => {
+    const serverMessages = historyQuery.data ?? [];
+    return [...serverMessages, ...localMessages];
+  }, [historyQuery.data, localMessages]);
 
-      try {
-        const history = await chatService.loadHistory(problemId);
-        setMessages(history);
-      } catch (err) {
-        setError(getErrorMessage(err, 'Failed to load chat history'));
-      } finally {
-        setLoading(false);
+  // Send message mutation
+  const sendMessageMutation = useMutation({
+    mutationFn: async ({ content, context }: { content: string; context?: SendMessagePayload['context'] }) => {
+      return chatService.sendMessage(problemId, content, context);
+    },
+    onMutate: async ({ content }) => {
+      // Optimistic update: add user message immediately
+      const userMessage = chatService.createUserMessage(content);
+      setLocalMessages((prev) => [...prev, userMessage]);
+      return { userMessage };
+    },
+    onSuccess: (aiResponse, _, context) => {
+      // Move optimistic message to server cache and add AI response
+      setLocalMessages([]);
+      queryClient.setQueryData<ChatMessage[]>(
+        chatKeys.history(problemId),
+        (old = []) => [...old, context?.userMessage!, aiResponse]
+      );
+    },
+    onError: (error, _, context) => {
+      // Remove failed optimistic message
+      if (context?.userMessage) {
+        setLocalMessages((prev) =>
+          prev.filter((msg) => msg.id !== context.userMessage.id)
+        );
       }
-    };
+      console.error('[useAIChat] Send message failed:', error);
+    },
+  });
 
-    loadHistory();
-    initialized.current = true;
+  // Request code review mutation
+  const requestReviewMutation = useMutation({
+    mutationFn: async (code: string) => {
+      return chatService.requestReview(problemId, code);
+    },
+    onMutate: async (code) => {
+      // Optimistic update: add review request message
+      const userMessage = chatService.createUserMessage(`[코드 리뷰 요청]\n\`\`\`\n${code}\n\`\`\``);
+      setLocalMessages((prev) => [...prev, userMessage]);
+      return { userMessage };
+    },
+    onSuccess: (reviewResponse, _, context) => {
+      // Move to server cache
+      setLocalMessages([]);
+      queryClient.setQueryData<ChatMessage[]>(
+        chatKeys.history(problemId),
+        (old = []) => [...old, context?.userMessage!, reviewResponse]
+      );
+    },
+    onError: (error, _, context) => {
+      if (context?.userMessage) {
+        setLocalMessages((prev) =>
+          prev.filter((msg) => msg.id !== context.userMessage.id)
+        );
+      }
+      console.error('[useAIChat] Request review failed:', error);
+    },
+  });
 
-    // Cleanup when leaving problem
-    return () => {
-      initialized.current = false;
-    };
-  }, [problemId, chatService, setLoading, clearError, setMessages, setError]);
+  // Wrapper functions
+  const sendMessage = useCallback(
+    async (content: string, context?: SendMessagePayload['context']) => {
+      if (!content.trim()) return;
+      await sendMessageMutation.mutateAsync({ content, context });
+    },
+    [sendMessageMutation]
+  );
 
-  // Send message with optimistic update
-  const sendMessageFn = async (content: string, context?: SendMessagePayload['context']) => {
-    if (!content.trim()) return;
+  const requestReview = useCallback(
+    async (code: string) => {
+      if (!code.trim()) return;
+      await requestReviewMutation.mutateAsync(code);
+    },
+    [requestReviewMutation]
+  );
 
-    // Optimistic update: add user message immediately
-    const userMessage = chatService.createUserMessage(content);
-    addMessage(userMessage);
-    setSending(true);
-    clearError();
+  const clearChat = useCallback(() => {
+    setLocalMessages([]);
+    queryClient.setQueryData(chatKeys.history(problemId), []);
+  }, [queryClient, problemId]);
 
-    try {
-      const aiResponse = await chatService.sendMessage(problemId, content, context);
-      addMessage(aiResponse);
-    } catch (err) {
-      setError(getErrorMessage(err, 'Failed to send message'));
-    } finally {
-      setSending(false);
-    }
-  };
-
-  // Request code review
-  const requestReviewFn = async (code: string) => {
-    if (!code.trim()) return;
-
-    // Add user's review request message
-    const userMessage = chatService.createUserMessage(`[코드 리뷰 요청]\n\`\`\`\n${code}\n\`\`\``);
-    addMessage(userMessage);
-    setSending(true);
-    clearError();
-
-    try {
-      const reviewResponse = await chatService.requestReview(problemId, code);
-      addMessage(reviewResponse);
-    } catch (err) {
-      setError(getErrorMessage(err, 'Failed to request code review'));
-    } finally {
-      setSending(false);
-    }
-  };
+  // Combined error
+  const error = historyQuery.error
+    ? getErrorMessage(historyQuery.error, 'Failed to load chat history')
+    : sendMessageMutation.error
+    ? getErrorMessage(sendMessageMutation.error, 'Failed to send message')
+    : requestReviewMutation.error
+    ? getErrorMessage(requestReviewMutation.error, 'Failed to request review')
+    : null;
 
   return {
     messages,
-    isLoading,
-    isSending,
+    isLoading: historyQuery.isLoading,
+    isSending: sendMessageMutation.isPending || requestReviewMutation.isPending,
     error,
-    sendMessage: sendMessageFn,
-    requestReview: requestReviewFn,
+    sendMessage,
+    requestReview,
     clearChat,
   };
 };
