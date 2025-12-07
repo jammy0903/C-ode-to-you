@@ -1,15 +1,15 @@
 /**
  * @file useProblemDetail.ts
- * @description Problem detail hook - orchestrates ProblemService + problemStore
+ * @description Problem detail hook - uses TanStack Query for server state management
  *
  * @principles
- * - SRP: ✅ Single responsibility: problem detail state + fetching
- * - CQS: ✅ Queries (problem) return data, Commands (fetch) mutate
- * - DIP: ✅ Depends on ProblemService and problemStore abstractions
- * - Composition: ✅ Composes Store (state) + Service (logic) + useEffect for auto-fetch
+ * - SRP: ✅ Single responsibility: problem detail fetching and caching
+ * - CQS: ✅ Queries return data via TanStack Query
+ * - DIP: ✅ Depends on repository abstraction
+ * - Composition: ✅ Composes TanStack Query + Repository
  *
  * @architecture
- * Hook → ProblemService (business logic) + problemStore (state)
+ * Hook → TanStack Query → Repository → API
  *
  * @functions
  * - useProblemDetail(problemId: string): ProblemDetailHookReturn - Hook that returns problem detail
@@ -18,45 +18,32 @@
  * - problem: Problem | null - Problem detail
  * - isLoading: boolean - Loading state
  * - error: string | null - Error message
+ * - refetch: () => void - Refetch function
  */
 
-import { useEffect, useMemo, useCallback } from 'react';
-import { useProblemStore } from '../store/problemStore';
-import { ProblemService } from '../services/ProblemService';
+import { useQuery } from '@tanstack/react-query';
 import { repositories } from '../../../shared/repositories';
 import { getErrorMessage } from '../../../shared/utils/error';
 
+// Query keys for problem-related queries
+export const problemKeys = {
+  all: ['problems'] as const,
+  detail: (id: string) => ['problems', 'detail', id] as const,
+};
+
 export const useProblemDetail = (problemId: string) => {
-  const store = useProblemStore();
-  const detailState = store.detailMap[problemId];
-
-  // Create ProblemService instance (memoized)
-  const problemService = useMemo(() => new ProblemService(repositories.problem), []);
-
-  // Fetch problem detail via service
-  const fetchDetail = useCallback(async () => {
-    if (!problemId) return;
-
-    store.setDetailLoading(problemId, true);
-
-    try {
-      const problem = await problemService.fetchProblemDetail(problemId);
-      store.setProblemDetail(problemId, problem);
-    } catch (error) {
-      store.setDetailError(problemId, getErrorMessage(error, 'Failed to load problem'));
-    }
-  }, [problemId, problemService, store]);
-
-  useEffect(() => {
-    if (problemId && !detailState?.data) {
-      fetchDetail();
-    }
-  }, [problemId, detailState?.data, fetchDetail]);
+  const query = useQuery({
+    queryKey: problemKeys.detail(problemId),
+    queryFn: () => repositories.problem.getProblemDetail(problemId),
+    enabled: !!problemId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes
+  });
 
   return {
-    problem: detailState?.data ?? null,
-    isLoading: detailState?.isLoading ?? false,
-    error: detailState?.error ?? null,
-    refetch: fetchDetail,
+    problem: query.data ?? null,
+    isLoading: query.isLoading,
+    error: query.error ? getErrorMessage(query.error, 'Failed to load problem') : null,
+    refetch: query.refetch,
   };
 };

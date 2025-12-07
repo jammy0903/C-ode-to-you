@@ -56,12 +56,12 @@ export const useCodeEditor = (problemId?: string) => {
 
     const loadDraft = async () => {
       try {
+        // EditorService guarantees non-null DraftData (abstraction layer handles null → default)
         const draft = await editorService.loadDraft(problemId);
-        if (draft) {
-          actions.setDraft(draft.code, draft.language);
-        }
-      } catch (error) {
-        console.error('[useCodeEditor] Failed to load draft:', error);
+        actions.setDraft(draft.code, draft.language);
+      } catch {
+        // Draft 로드 실패는 무시 (인증 만료, 네트워크 오류 등)
+        // 사용자는 빈 에디터에서 시작하면 됨
       }
     };
 

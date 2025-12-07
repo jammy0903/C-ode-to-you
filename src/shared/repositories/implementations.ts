@@ -188,10 +188,10 @@ export class ApiAuthRepository implements IAuthRepository {
 
   /**
    * Login with Google OAuth
-   * @param accessToken - Google OAuth access token (for Expo Go) or authorization code (for native builds)
+   * @param idToken - Google OAuth ID token (JWT from Google Sign-In)
    */
-  async loginWithGoogle(accessToken: string): Promise<AuthResponse> {
-    return await authApi.loginWithGoogle(accessToken);
+  async loginWithGoogle(idToken: string): Promise<AuthResponse> {
+    return await authApi.loginWithGoogle(idToken);
   }
 
   async refreshToken(refreshToken: string): Promise<{ token: string }> {

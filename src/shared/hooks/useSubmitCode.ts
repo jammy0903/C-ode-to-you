@@ -3,25 +3,24 @@
  *
  * Orchestrates the complex submission workflow:
  * 1. Validate code
- * 2. Submit to server
+ * 2. Submit to server (via useSubmission)
  * 3. Start polling for results
  *
  * Design Principles:
- * - Single Responsibility: Only handles submission workflow
- * - Composition: Uses ValidationService + Store + PollingService
+ * - Single Responsibility: Only handles submission workflow with validation
+ * - Composition: Uses ValidationService + useSubmission hook
  * - No duplication: Reusable across components
+ *
+ * @note
+ * This hook wraps useSubmission with validation logic.
+ * For direct submission without validation, use useSubmission directly.
  */
 
-import { useSubmissionStore } from '../../features/submissions/store/submissionStore';
+import { useCallback } from 'react';
+import { useSubmission } from '../../features/submissions/hooks/useSubmission';
 import { ValidationService } from '../services';
 
 export interface SubmitCodeOptions {
-  /**
-   * Auto-start polling after submission
-   * @default true
-   */
-  autoStartPolling?: boolean;
-
   /**
    * Callback when submission succeeds
    */
@@ -33,57 +32,53 @@ export interface SubmitCodeOptions {
   onError?: (error: Error) => void;
 }
 
-export function useSubmitCode() {
-  const store = useSubmissionStore();
+export function useSubmitCode(problemId: string) {
+  const submission = useSubmission(problemId);
 
   /**
-   * Submit code with validation and automatic polling
+   * Submit code with validation
    */
-  const submit = async (
-    problemId: string,
-    code: string,
-    language: string,
-    options: SubmitCodeOptions = {}
-  ): Promise<string> => {
-    const { autoStartPolling = true, onSuccess, onError } = options;
+  const submit = useCallback(
+    async (
+      code: string,
+      language: string,
+      options: SubmitCodeOptions = {}
+    ): Promise<string> => {
+      const { onSuccess, onError } = options;
 
-    try {
-      // Step 1: Validate
-      const validation = ValidationService.validateSubmissionCode(code, language);
-      if (!validation.valid) {
-        const errorMessage = ValidationService.formatErrors(validation.errors);
-        const error = new Error(errorMessage);
-        onError?.(error);
+      try {
+        // Step 1: Validate
+        const validation = ValidationService.validateSubmissionCode(code, language);
+        if (!validation.valid) {
+          const errorMessage = ValidationService.formatErrors(validation.errors);
+          const error = new Error(errorMessage);
+          onError?.(error);
+          throw error;
+        }
+
+        // Step 2: Submit (polling is handled internally by useSubmission)
+        const submissionId = await submission.submitCode(code, language);
+
+        // Success callback
+        onSuccess?.(submissionId);
+
+        return submissionId;
+      } catch (error) {
+        // Error callback
+        if (error instanceof Error) {
+          onError?.(error);
+        }
         throw error;
       }
-
-      // Step 2: Submit
-      const submissionId = await store.submitCode(problemId, code, language);
-
-      // Step 3: Start polling (if enabled)
-      if (autoStartPolling) {
-        store.startPolling(submissionId);
-      }
-
-      // Success callback
-      onSuccess?.(submissionId);
-
-      return submissionId;
-    } catch (error) {
-      // Error callback
-      if (error instanceof Error) {
-        onError?.(error);
-      }
-      throw error;
-    }
-  };
+    },
+    [submission]
+  );
 
   return {
     submit,
-    isSubmitting: store.isSubmitting,
-    currentSubmission: store.currentSubmission,
-    error: store.error,
-    stopPolling: store.stopPolling,
-    resetSubmission: store.resetCurrentSubmission,
+    isSubmitting: submission.isSubmitting,
+    currentSubmission: submission.currentSubmission,
+    error: submission.error,
+    resetSubmission: submission.reset,
   };
 }

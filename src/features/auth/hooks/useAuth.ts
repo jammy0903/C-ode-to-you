@@ -20,7 +20,7 @@
  * - isLoading: boolean - Session query loading state
  * - error: string | null - Combined error from session/login queries
  * - loginWithKakao: (code: string) => Promise<User> - Kakao OAuth login
- * - loginWithGoogle: (accessToken: string) => Promise<User> - Google OAuth login
+ * - loginWithGoogle: (idToken: string) => Promise<User> - Google OAuth login
  * - logout: () => Promise<void> - Clear tokens and session
  * - isLoggingIn: boolean - Login mutation pending state
  * - isLoggingOut: boolean - Logout mutation pending state
@@ -76,8 +76,8 @@ export const useAuth = () => {
 
   // Google login - delegates to AuthService
   const loginWithGoogle = useMutation({
-    mutationFn: async (accessToken: string) => {
-      const result = await authService.loginWithGoogle(accessToken);
+    mutationFn: async (idToken: string) => {
+      const result = await authService.loginWithGoogle(idToken);
       return result.user;
     },
     onSuccess: () => {
