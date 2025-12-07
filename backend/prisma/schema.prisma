@@ -1,0 +1,246 @@
+// Prisma Schema for C Language Learning App
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// User Management
+// ============================================
+
+model User {
+  id         String   @id @default(uuid()) @db.Uuid
+  email      String   @unique
+  name       String
+  provider   Provider
+  providerId String   @map("provider_id")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  submissions       Submission[]
+  conversations     AiConversation[]
+  drafts            Draft[]
+  githubConnection  GithubConnection?
+  settings          UserSettings?
+
+  @@unique([provider, providerId])
+  @@index([email])
+  @@index([provider, providerId])
+  @@map("users")
+}
+
+enum Provider {
+  kakao
+  google
+}
+
+// ============================================
+// Problems
+// ============================================
+
+model Problem {
+  id              String     @id @default(uuid()) @db.Uuid
+  number          Int        @unique
+  title           String
+  description     String     @db.Text
+  inputFormat     String     @map("input_format") @db.Text
+  outputFormat    String     @map("output_format") @db.Text
+  difficulty      String     @db.VarChar(20) // Baekjoon tier: bronze_5 ~ ruby_1
+  tags            Json       @default("[]")
+  timeLimit       Int        @default(2000) @map("time_limit")
+  memoryLimit     Int        @default(128) @map("memory_limit")
+  examples        Json       @default("[]")
+  acceptedCount   Int        @default(0) @map("accepted_count")
+  submissionCount Int        @default(0) @map("submission_count")
+  solvedacLevel   Int?       @map("solvedac_level")  // solved.ac level (1-30, 0=unrated)
+  baekjoonUrl     String?    @map("baekjoon_url")    // https://www.acmicpc.net/problem/{number}
+  createdAt       DateTime   @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime   @updatedAt @map("updated_at") @db.Timestamptz
+
+  submissions   Submission[]
+  functions     ProblemFunction[]
+  conversations AiConversation[]
+  drafts        Draft[]
+
+  @@index([number])
+  @@index([difficulty])
+  @@index([solvedacLevel])
+  @@map("problems")
+}
+
+model ProblemFunction {
+  id           String  @id @default(uuid()) @db.Uuid
+  problemId    String  @map("problem_id") @db.Uuid
+  category     String
+  functionName String  @map("function_name")
+  headerFile   String? @map("header_file")
+  description  String  @db.Text
+  example      String? @db.Text
+  displayOrder Int     @default(0) @map("display_order")
+
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@index([problemId])
+  @@index([problemId, displayOrder])
+  @@map("problem_functions")
+}
+
+// ============================================
+// Submissions
+// ============================================
+
+model Submission {
+  id            String    @id @default(uuid()) @db.Uuid
+  userId        String    @map("user_id") @db.Uuid
+  problemId     String    @map("problem_id") @db.Uuid
+  code          String    @db.Text
+  language      String    @default("c")
+  verdict       Verdict
+  executionTime Int?      @map("execution_time")
+  memoryUsage   Int?      @map("memory_usage")
+  testResults   Json      @default("[]") @map("test_results")
+  submittedAt   DateTime  @default(now()) @map("submitted_at") @db.Timestamptz
+  judgedAt      DateTime? @map("judged_at") @db.Timestamptz
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problem      Problem       @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  githubCommit GithubCommit?
+
+  @@index([userId])
+  @@index([problemId])
+  @@index([verdict])
+  @@index([userId, problemId])
+  @@index([submittedAt(sort: Desc)])
+  @@map("submissions")
+}
+
+enum Verdict {
+  judging
+  accepted
+  wrong_answer
+  time_limit_exceeded
+  memory_limit_exceeded
+  runtime_error
+  compile_error
+}
+
+// ============================================
+// AI Chat
+// ============================================
+
+model AiConversation {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  problemId String   @map("problem_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  user     User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problem  Problem     @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  messages AiMessage[]
+
+  @@unique([userId, problemId])
+  @@index([userId])
+  @@index([problemId])
+  @@map("ai_conversations")
+}
+
+model AiMessage {
+  id             String   @id @default(uuid()) @db.Uuid
+  conversationId String   @map("conversation_id") @db.Uuid
+  role           Role
+  content        String   @db.Text
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  conversation AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@index([createdAt])
+  @@map("ai_messages")
+}
+
+enum Role {
+  user
+  assistant
+}
+
+// ============================================
+// GitHub Integration
+// ============================================
+
+model GithubConnection {
+  id             String    @id @default(uuid()) @db.Uuid
+  userId         String    @unique @map("user_id") @db.Uuid
+  githubUserId   String    @map("github_user_id")
+  username       String
+  accessToken    String    @map("access_token") @db.Text
+  repositoryName String    @map("repository_name")
+  repositoryUrl  String    @map("repository_url")
+  lastSyncAt     DateTime? @map("last_sync_at") @db.Timestamptz
+  connectedAt    DateTime  @default(now()) @map("connected_at") @db.Timestamptz
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("github_connections")
+}
+
+model GithubCommit {
+  id            String   @id @default(uuid()) @db.Uuid
+  submissionId  String   @unique @map("submission_id") @db.Uuid
+  commitSha     String   @map("commit_sha")
+  commitUrl     String   @map("commit_url")
+  commitMessage String   @map("commit_message") @db.Text
+  committedAt   DateTime @default(now()) @map("committed_at") @db.Timestamptz
+
+  submission Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  @@index([submissionId])
+  @@index([committedAt(sort: Desc)])
+  @@map("github_commits")
+}
+
+// ============================================
+// User Settings
+// ============================================
+
+model UserSettings {
+  id                   String   @id @default(uuid()) @db.Uuid
+  userId               String   @unique @map("user_id") @db.Uuid
+  editorSettings       Json     @default("{}") @map("editor_settings")
+  aiSettings           Json     @default("{}") @map("ai_settings")
+  githubSettings       Json     @default("{}") @map("github_settings")
+  notificationSettings Json     @default("{}") @map("notification_settings")
+  createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt            DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("user_settings")
+}
+
+// ============================================
+// Draft Code
+// ============================================
+
+model Draft {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  problemId String   @map("problem_id") @db.Uuid
+  code      String   @db.Text
+  savedAt   DateTime @default(now()) @map("saved_at") @db.Timestamptz
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, problemId])
+  @@index([userId, problemId])
+  @@map("drafts")
+}
