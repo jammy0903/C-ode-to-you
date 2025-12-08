@@ -58,31 +58,52 @@ const client = axios.create({
   headers: CONFIG.HEADERS.COMMON,
 });
 
-// Request Interceptor: Inject Token
+// Request Interceptor: Inject Token and ngrok header
 client.interceptors.request.use(
   async (config: InternalAxiosRequestConfig) => {
     try {
       const token = await getItem(STORAGE_KEYS.ACCESS_TOKEN);
-      if (token && config.headers) {
-        config.headers.Authorization = `Bearer ${token}`;
+      if (config.headers) {
+        // Always ensure ngrok header is set (bypasses browser warning page)
+        config.headers['ngrok-skip-browser-warning'] = 'true';
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
       }
+      // Debug logging
+      console.log('[Axios Request]', config.method?.toUpperCase(), config.url);
+      console.log('[Axios Headers]', JSON.stringify(config.headers));
     } catch (error) {
       console.error('Error reading token:', error);
     }
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => {
+    console.error('[Axios Request Error]', error);
+    return Promise.reject(error);
+  }
 );
 
 // Response Interceptor: Handle Global Errors (401, etc.)
 client.interceptors.response.use(
   (response) => {
+    // Debug logging
+    console.log('[Axios Response]', response.status, response.config.url);
     // Unpack "data" if the backend returns { success: true, data: ... } structure consistently
     // But Axios returns { data: { success: true, ... }, status: 200 }
     // We return the full response data to be handled by api modules
     return response;
   },
   async (error: AxiosError<ApiResponse>) => {
+    // Debug error details
+    console.error('[Axios Error]', {
+      message: error.message,
+      code: error.code,
+      status: error.response?.status,
+      url: error.config?.url,
+      responseData: error.response?.data,
+    });
+
     const originalRequest = error.config as RetryableAxiosRequestConfig;
 
     // Handle 401 Unauthorized - Token Refresh Logic

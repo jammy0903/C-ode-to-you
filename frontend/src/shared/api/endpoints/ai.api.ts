@@ -10,24 +10,9 @@ export interface SendMessagePayload {
   };
 }
 
-// Backend response types (different from frontend ChatMessage)
-interface BackendChatResponse {
-  conversationId: string;
-  response: string;
-  timestamp: string;
-}
-
 interface BackendReviewResponse {
   review: string;
 }
-
-// Transform backend response to frontend ChatMessage
-const toAIChatMessage = (response: BackendChatResponse): ChatMessage => ({
-  id: `ai-${response.conversationId}-${Date.now()}`,
-  role: 'assistant',
-  content: response.response,
-  createdAt: response.timestamp,
-});
 
 /**
  * AI API endpoints
@@ -45,10 +30,13 @@ export const aiApi = {
   /**
    * Send Chat Message
    * POST /api/ai/chat/:problemId
+   * Backend now returns ChatMessage format directly
    */
   sendChatMessage: async (problemId: string, payload: SendMessagePayload): Promise<ChatMessage> => {
-    const response = await apiClient.post<BackendChatResponse>(`/ai/chat/${problemId}`, payload);
-    return toAIChatMessage(response);
+    console.log('[aiApi] sendChatMessage called, problemId:', problemId);
+    const response = await apiClient.post<ChatMessage>(`/ai/chat/${problemId}`, payload);
+    console.log('[aiApi] Response:', JSON.stringify(response));
+    return response;
   },
 
   /**
