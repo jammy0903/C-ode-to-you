@@ -53,7 +53,7 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({ message }) => {
     return parts.length > 0 ? parts : [{ type: 'text', content }];
   };
 
-  const contentParts = parseContent(message.content);
+  const contentParts = parseContent(message.content ?? '');
 
   return (
     <XStack

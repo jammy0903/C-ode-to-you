@@ -5,6 +5,7 @@ export const CONFIG = {
     COMMON: {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
+      'ngrok-skip-browser-warning': 'true',
     },
   },
 } as const;

@@ -52,12 +52,12 @@ export const AIChatScreen: React.FC<AIChatScreenProps> = ({ route }) => {
 
   // 새 메시지가 추가되면 스크롤
   useEffect(() => {
-    if (messages.length > 0 && scrollViewRef.current) {
+    if ((messages?.length ?? 0) > 0 && scrollViewRef.current) {
       setTimeout(() => {
         scrollViewRef.current?.scrollToEnd({ animated: true });
       }, 100);
     }
-  }, [messages.length]);
+  }, [messages?.length]);
 
   const handleSend = async (content: string) => {
     await sendMessage(content);
@@ -67,7 +67,7 @@ export const AIChatScreen: React.FC<AIChatScreenProps> = ({ route }) => {
     await requestReview(code);
   };
 
-  if (isLoading && messages.length === 0) {
+  if (isLoading && (!messages || messages.length === 0)) {
     return <Loading fullScreen message="AI 채팅을 준비하는 중..." />;
   }
 
