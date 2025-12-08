@@ -217,10 +217,18 @@ export class AuthService {
     try {
       logger.info('[GoogleAuth] Verifying idToken with Google...');
 
+      // Build audience list (Web + Android client IDs)
+      const validAudiences = [env.GOOGLE_CLIENT_ID];
+      if (env.GOOGLE_ANDROID_CLIENT_ID) {
+        validAudiences.push(env.GOOGLE_ANDROID_CLIENT_ID);
+      }
+
+      logger.info('[GoogleAuth] Valid audiences:', validAudiences);
+
       // Verify the idToken using Google's official library
       const ticket = await this.googleClient.verifyIdToken({
         idToken,
-        audience: env.GOOGLE_CLIENT_ID,
+        audience: validAudiences,
       });
 
       const payload = ticket.getPayload();

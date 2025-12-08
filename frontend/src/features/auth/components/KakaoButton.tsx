@@ -1,7 +1,7 @@
 import React from 'react';
-import { TouchableOpacity, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { Button } from '../../../shared/components/Button';
-import { colors } from '../../../shared/styles/theme';
+
 
 interface KakaoButtonProps {
   onPress: () => void;

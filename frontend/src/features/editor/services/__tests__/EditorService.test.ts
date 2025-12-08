@@ -171,12 +171,15 @@ describe('EditorService', () => {
       expect(mockRepository.getDraft).toHaveBeenCalledWith('problem-1');
     });
 
-    it('should return null when draft not found', async () => {
+    it('should return a default draft when draft not found', async () => {
       mockRepository.getDraft.mockResolvedValue(null);
 
       const result = await service.loadDraft('problem-1');
 
-      expect(result).toBeNull();
+      expect(result).toEqual({
+        code: '',
+        language: 'c',
+      });
     });
 
     it('should handle load errors', async () => {

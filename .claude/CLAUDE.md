@@ -62,6 +62,11 @@ The following must be strictly adhered to when responding:
 - **Do not recommend unnecessarily difficult syntax**
 - **Do not provide Baekjoon answer source code as-is** (provide hints/solution methods only)
 
+### ⏺ Git Commit Rules
+- **NEVER add "Generated with Claude Code" or "Co-Authored-By: Claude" to commit messages**
+- **Keep commit messages clean and professional**
+- **Use conventional commit format**: `type: description` (feat, fix, refactor, docs, WIP, etc.)
+
 ### ⏺ DevOps / Docker Rules
 - **Always use `docker compose` subcommand, NOT `docker-compose`**
 - **Do NOT specify `version` key in compose files**
@@ -97,11 +102,18 @@ Component → Hook (orchestration) → Store (state) + Service (logic) → Repos
 |--------|-----------|
 | Platform | Android |
 | Frontend | React Native + TypeScript + Expo |
-| Code Editor | WebView-based CodeMirror or Monaco |
+| Build | **EAS Build (Development Build)** - NOT Expo Go |
+| Code Editor | WebView-based CodeMirror |
 | Backend | Node.js + Express |
-| Database | PostgreSQL or Supabase |
-| AI | Free Korean/coding-specialized open source model integration (e.g., Qwen2.5-Coder, StarCoder2-Korean, etc.) |
-| Authentication | Kakao Login, Google Login |
+| Database | PostgreSQL |
+| AI | Ollama (local) with Qwen2.5-Coder |
+| Authentication | Google Login |
+
+### ⏺ Development Environment Notes
+- **We use EAS Build (Development Build), NOT Expo Go**
+- Metro bundler runs with `npx expo start --tunnel` for device testing
+- Backend uses ngrok tunnel for external access
+- Physical Android device connected for testing
 
 ---
 

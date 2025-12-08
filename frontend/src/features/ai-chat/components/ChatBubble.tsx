@@ -2,25 +2,23 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { YStack, XStack } from 'tamagui';
 import { ChatMessage } from '../../../shared/types/api.types';
-import { colors, spacing, borderRadius, createShadow } from '../../../shared/styles/theme';
+import { spacing, borderRadius, createShadow } from '../../../shared/styles/theme';
 import { globalStyles } from '../../../shared/styles/globalStyles';
 
 interface ChatBubbleProps {
   message: ChatMessage;
-  onRequestReview?: (code: string) => void;
 }
 
 /**
  * 채팅 말풍선 컴포넌트 (미래지향적 디자인)
  * 사용자/AI 구분, 코드 블록 렌더링 지원
  */
-export const ChatBubble: React.FC<ChatBubbleProps> = ({ message, onRequestReview }) => {
+export const ChatBubble: React.FC<ChatBubbleProps> = ({ message }) => {
   const isUser = message.role === 'user';
   const isAI = message.role === 'assistant';
 
   // 코드 블록 감지 (간단한 정규식)
   const codeBlockRegex = /```([\s\S]*?)```/g;
-  const hasCodeBlock = codeBlockRegex.test(message.content);
 
   // 마크다운 파싱 (간단한 버전)
   const parseContent = (content: string) => {

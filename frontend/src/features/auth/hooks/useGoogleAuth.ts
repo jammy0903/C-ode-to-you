@@ -90,14 +90,23 @@ export function useGoogleAuth() {
     } catch (err: any) {
       let errorMessage = 'Google sign in failed';
 
+      // 상세 에러 로깅
+      console.error('[GoogleAuth] === ERROR DETAILS ===');
+      console.error('[GoogleAuth] Error code:', err.code);
+      console.error('[GoogleAuth] Error message:', err.message);
+      console.error('[GoogleAuth] Full error:', JSON.stringify(err, null, 2));
+
       if (err.code === statusCodes.SIGN_IN_CANCELLED) {
         errorMessage = 'Google sign in was cancelled';
       } else if (err.code === statusCodes.IN_PROGRESS) {
         errorMessage = 'Sign in is already in progress';
       } else if (err.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
         errorMessage = 'Google Play Services not available';
+      } else if (err.code === statusCodes.DEVELOPER_ERROR || err.code === 10) {
+        errorMessage = 'DEVELOPER_ERROR (10): SHA-1 또는 Client ID 설정 오류';
       } else {
-        console.error('[GoogleAuth] Sign in error:', err);
+        // 에러 코드를 화면에 직접 표시
+        errorMessage = `에러 코드: ${err.code}, 메시지: ${err.message || 'unknown'}`;
       }
 
       setError(errorMessage);

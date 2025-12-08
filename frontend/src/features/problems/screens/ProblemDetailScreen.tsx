@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { YStack, XStack } from 'tamagui';
 import { ScreenContainer } from '../../../shared/components/ScreenContainer';
 import { Loading } from '../../../shared/components/Loading';
@@ -24,7 +24,7 @@ interface ProblemDetailScreenProps {
 export const ProblemDetailScreen: React.FC<ProblemDetailScreenProps> = ({ route, navigation }) => {
   const { problemId } = route.params;
   const { problem, isLoading, error } = useProblemDetail(problemId);
-  const [showChatButton, setShowChatButton] = useState(true);
+  const [showChatButton] = useState(true);
 
   const handleChatPress = () => {
     navigation.navigate('AIChat', { problemId });

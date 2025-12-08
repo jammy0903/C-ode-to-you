@@ -4,10 +4,9 @@ import { YStack, XStack } from 'tamagui';
 import { ScreenContainer } from '../../../shared/components/ScreenContainer';
 import { ChatBubble } from '../components/ChatBubble';
 import { ChatInput } from '../components/ChatInput';
-import { FloatingChatButton } from '../components/FloatingChatButton';
 import { useAIChat } from '../hooks/useAIChat';
 import { Loading } from '../../../shared/components/Loading';
-import { colors, spacing, borderRadius, createShadow, createTextShadow } from '../../../shared/styles/theme';
+import { spacing, createShadow, createTextShadow } from '../../../shared/styles/theme';
 import { globalStyles } from '../../../shared/styles/globalStyles';
 
 interface AIChatScreenProps {
@@ -16,18 +15,17 @@ interface AIChatScreenProps {
       problemId: string;
     };
   };
-  navigation?: any;
 }
 
 /**
  * 미래지향적인 AI 채팅 화면
  * 홀로그램 스타일, 네온 효과
  */
-export const AIChatScreen: React.FC<AIChatScreenProps> = ({ route, navigation }) => {
+export const AIChatScreen: React.FC<AIChatScreenProps> = ({ route }) => {
   const { problemId } = route.params;
   const { messages, isLoading, isSending, error, sendMessage, requestReview } = useAIChat(problemId);
   const scrollViewRef = useRef<any>(null);
-  const [showInput, setShowInput] = useState(true);
+  const showInput = true;
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   // AI 응답 대기 중 펄스 애니메이션
@@ -115,7 +113,6 @@ export const AIChatScreen: React.FC<AIChatScreenProps> = ({ route, navigation })
                 <ChatBubble
                   key={message?.id || `msg-${index}`}
                   message={message}
-                  onRequestReview={handleRequestReview}
                 />
               ))}
             </YStack>

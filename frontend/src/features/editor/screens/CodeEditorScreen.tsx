@@ -1,10 +1,10 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { ScreenContainer } from '../../../shared/components/ScreenContainer';
 import { CodeEditor } from '../components/CodeEditor';
 import { useSubmission } from '../../submissions/hooks/useSubmission';
 import { useProblemDetail } from '../../problems/hooks/useProblemDetail';
-import { colors } from '../../../shared/styles/theme';
+
 
 interface CodeEditorScreenProps {
   route: {
@@ -22,7 +22,7 @@ interface CodeEditorScreenProps {
 export const CodeEditorScreen: React.FC<CodeEditorScreenProps> = ({ route, navigation }) => {
   const { problemId } = route.params;
   const { problem } = useProblemDetail(problemId);
-  const { submitCode, currentSubmission, isSubmitting } = useSubmission(problemId);
+  const {} = useSubmission(problemId);
 
   const handleRun = () => {
     // TODO: 코드 실행 로직

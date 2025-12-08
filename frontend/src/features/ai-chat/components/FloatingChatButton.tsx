@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { TouchableOpacity, Text, StyleSheet, Animated } from 'react-native';
-import { colors, spacing, borderRadius, createShadow, createTextShadow } from '../../../shared/styles/theme';
+import { createShadow, createTextShadow } from '../../../shared/styles/theme';
 import { globalStyles } from '../../../shared/styles/globalStyles';
 
 interface FloatingChatButtonProps {

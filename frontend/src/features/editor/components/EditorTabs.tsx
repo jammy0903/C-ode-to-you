@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import { XStack } from 'tamagui';
-import { colors, spacing, borderRadius, createShadow, createTextShadow } from '../../../shared/styles/theme';
+import { colors, spacing, createShadow, createTextShadow } from '../../../shared/styles/theme';
 
 export type EditorTabType = 'code' | 'chat';
 
@@ -21,6 +21,8 @@ export const EditorTabs: React.FC<EditorTabsProps> = ({
   hasUnreadMessages = false,
 }) => {
   const pulseAnim = React.useRef(new Animated.Value(1)).current;
+
+  console.log('[EditorTabs] Rendering, activeTab:', activeTab);
 
   // 읽지 않은 메시지 있을 때 펄스 애니메이션
   React.useEffect(() => {
@@ -50,7 +52,10 @@ export const EditorTabs: React.FC<EditorTabsProps> = ({
         {/* 코드 에디터 탭 */}
         <TouchableOpacity
           style={[styles.tab, activeTab === 'code' && styles.activeTab]}
-          onPress={() => onTabChange('code')}
+          onPress={() => {
+            console.log('[EditorTabs] Code tab pressed');
+            onTabChange('code');
+          }}
           activeOpacity={0.7}
         >
           <Text style={[styles.tabIcon, activeTab === 'code' && styles.activeTabText]}>
@@ -65,7 +70,10 @@ export const EditorTabs: React.FC<EditorTabsProps> = ({
         {/* AI 채팅 탭 */}
         <TouchableOpacity
           style={[styles.tab, activeTab === 'chat' && styles.activeChatTab]}
-          onPress={() => onTabChange('chat')}
+          onPress={() => {
+            console.log('[EditorTabs] Chat tab pressed');
+            onTabChange('chat');
+          }}
           activeOpacity={0.7}
         >
           <Text style={[styles.tabIcon, activeTab === 'chat' && styles.activeChatTabText]}>

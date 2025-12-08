@@ -23,7 +23,8 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#1a1a1a"
       },
-      "package": "com.code2u.app"
+      "package": "com.code2u.app",
+      "softwareKeyboardLayoutMode": "resize"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -33,7 +34,8 @@
       [
         "@react-native-google-signin/google-signin",
         {
-          "iosUrlScheme": "com.googleusercontent.apps.681908599014-r6hdbp82iemnj3e7ogqj374mjd5l5nul"
+          "iosUrlScheme": "com.googleusercontent.apps.681908599014-r6hdbp82iemnj3e7ogqj374mjd5l5nul",
+          "androidClientId": "681908599014-mav3ri4iqqa6ofhjlovpld3sc8j0fj1i.apps.googleusercontent.com"
         }
       ]
     ],
@@ -41,7 +43,7 @@
     "extra": {
       "googleOAuth": {
         "webClientId": "681908599014-r6hdbp82iemnj3e7ogqj374mjd5l5nul.apps.googleusercontent.com",
-        "androidClientId": "681908599014-tm7leutsvkhtfr3fkacsq9io500svl4g.apps.googleusercontent.com"
+        "androidClientId": "681908599014-mav3ri4iqqa6ofhjlovpld3sc8j0fj1i.apps.googleusercontent.com"
       },
       "eas": {
         "projectId": "cd1f1b7b-c1e8-4d2d-b4f5-b78a11495c73"

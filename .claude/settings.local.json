@@ -104,7 +104,18 @@
       "Bash(features/github/hooks )",
       "Bash(features/github/components )",
       "Bash(features/profile/components )",
-      "Bash(shared/api/interceptors )"
+      "Bash(shared/api/interceptors )",
+      "Bash(FILTER_BRANCH_SQUELCH_WARNING=1 git filter-branch -f --msg-filter '\ngrep -v \"\"🤖 Generated with\"\" | grep -v \"\"Co-Authored-By: Claude\"\" | sed \"\"/^$/N;s/^\\n$//\"\"\n' -- --all)",
+      "Bash(git stash:*)",
+      "Bash(FILTER_BRANCH_SQUELCH_WARNING=1 git filter-branch:*)",
+      "WebFetch(domain:discuss.codemirror.net)",
+      "Bash(killall:*)",
+      "WebFetch(domain:www.npmjs.com)",
+      "Bash(npm view:*)",
+      "Bash(npm search:*)",
+      "WebFetch(domain:react-native-google-signin.github.io)",
+      "Bash(npx @react-native-google-signin/config-doctor)",
+      "Bash(apksigner verify:*)"
     ],
     "deny": [],
     "ask": []
