@@ -180,10 +180,12 @@ export class AIService {
       },
     });
 
+    // Return in ChatMessage format for frontend compatibility
     return {
-      conversationId,
-      response: aiResponse,
-      timestamp: message.createdAt,
+      id: message.id,
+      role: 'assistant' as const,
+      content: aiResponse,
+      createdAt: message.createdAt.toISOString(),
     };
   }
 

@@ -1,13 +1,12 @@
 import React, { useRef, useEffect } from 'react';
 import { WebView } from 'react-native-webview';
 import { View, StyleSheet, ActivityIndicator } from 'react-native';
-import { colors } from '../../../shared/styles/theme';
+
 
 interface CodeMirrorWebViewProps {
   code: string;
   language: string;
   onChange: (code: string) => void;
-  theme?: 'cyberpunk' | 'dark' | 'light';
 }
 
 /**
@@ -18,9 +17,9 @@ export const CodeMirrorWebView: React.FC<CodeMirrorWebViewProps> = ({
   code,
   language,
   onChange,
-  theme = 'cyberpunk',
 }) => {
   const webViewRef = useRef<WebView>(null);
+
 
   // CodeMirror HTML 템플릿 (사이버펑크 테마)
   const htmlContent = `
@@ -135,6 +134,15 @@ export const CodeMirrorWebView: React.FC<CodeMirrorWebViewProps> = ({
                   }));
                 }
               }),
+              EditorView.focusChangeEffect.of((state, focusing) => {
+                if (focusing) {
+                  // 포커스될 때 React Native에 알림
+                  window.ReactNativeWebView.postMessage(JSON.stringify({
+                    type: 'editorFocus'
+                  }));
+                }
+                return null;
+              }),
               EditorView.theme({
                 '&': {
                   backgroundColor: '#0d1117',
@@ -197,6 +205,10 @@ export const CodeMirrorWebView: React.FC<CodeMirrorWebViewProps> = ({
       const data = JSON.parse(event.nativeEvent.data);
       if (data.type === 'codeChange') {
         onChange(data.code);
+      } else if (data.type === 'editorFocus') {
+        // WebView에서 포커스 이벤트를 감지했으므로
+        // 각 플랫폼의 키보드 제어는 시스템이 자동으로 처리합니다
+        console.log('[CodeMirror] Editor focused');
       }
     } catch (error) {
       console.error('WebView message error:', error);
@@ -213,6 +225,19 @@ export const CodeMirrorWebView: React.FC<CodeMirrorWebViewProps> = ({
         javaScriptEnabled={true}
         domStorageEnabled={true}
         startInLoadingState={true}
+        keyboardDisplayRequiresUserAction={false}
+        hideKeyboardAccessoryView={false}
+        scrollEnabled={false}
+        nestedScrollEnabled={false}
+        androidLayerType="hardware"
+        mixedContentMode="compatibility"
+        textInteractionEnabled={true}
+        allowsInlineMediaPlayback={true}
+        setSupportMultipleWindows={false}
+        overScrollMode="never"
+        onTouchStart={() => {
+          // WebView 터치 시 키보드가 자동으로 표시됩니다
+        }}
         renderLoading={() => (
           <View style={styles.loading}>
             <ActivityIndicator size="large" color="#00ffff" />

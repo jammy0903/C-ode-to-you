@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Animated } from 'react-native';
-import { XStack } from 'tamagui';
+import React, { useState, useRef, useCallback } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Keyboard, Platform } from 'react-native';
 import { colors, spacing, borderRadius, createShadow } from '../../../shared/styles/theme';
 import { globalStyles } from '../../../shared/styles/globalStyles';
 
@@ -11,8 +10,7 @@ interface ChatInputProps {
 }
 
 /**
- * 채팅 입력 필드 (미래지향적 디자인)
- * 네온 효과, 애니메이션
+ * 채팅 입력 필드
  */
 export const ChatInput: React.FC<ChatInputProps> = ({
   onSend,
@@ -21,65 +19,39 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 }) => {
   const [message, setMessage] = useState('');
   const [isFocused, setIsFocused] = useState(false);
-  const glowAnim = React.useRef(new Animated.Value(0)).current;
+  const inputRef = useRef<TextInput>(null);
 
-  // 포커스 시 글로우 애니메이션
-  React.useEffect(() => {
-    if (isFocused) {
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(glowAnim, {
-            toValue: 1,
-            duration: 1500,
-            useNativeDriver: true,
-          }),
-          Animated.timing(glowAnim, {
-            toValue: 0,
-            duration: 1500,
-            useNativeDriver: true,
-          }),
-        ])
-      ).start();
-    } else {
-      glowAnim.setValue(0);
-    }
-  }, [isFocused]);
-
-  const handleSend = () => {
+  const handleSend = useCallback(() => {
     if (message.trim() && !disabled) {
       onSend(message.trim());
       setMessage('');
     }
-  };
+  }, [message, disabled, onSend]);
 
-  const glowOpacity = glowAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.3, 0.8],
-  });
+  const handleFocus = useCallback(() => {
+    setIsFocused(true);
+  }, []);
+
+  const handleBlur = useCallback(() => {
+    setIsFocused(false);
+  }, []);
+
+  const handleContainerPress = useCallback(() => {
+    inputRef.current?.focus();
+  }, []);
 
   return (
     <View style={styles.container}>
-      {/* 네온 글로우 효과 */}
-      {isFocused && (
-        <Animated.View
-          style={[
-            styles.glowEffect,
-            {
-              opacity: glowOpacity,
-            },
-          ]}
-        />
-      )}
-
-      <XStack
+      <TouchableOpacity
+        activeOpacity={1}
+        onPress={handleContainerPress}
         style={[
           styles.inputContainer,
           isFocused && styles.inputFocused,
         ]}
-        alignItems="center"
-        gap={spacing.sm}
       >
         <TextInput
+          ref={inputRef}
           style={styles.input}
           value={message}
           onChangeText={setMessage}
@@ -88,9 +60,14 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           multiline
           maxLength={1000}
           editable={!disabled}
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => setIsFocused(false)}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
           onSubmitEditing={handleSend}
+          blurOnSubmit={false}
+          autoCapitalize="none"
+          autoCorrect={false}
+          showSoftInputOnFocus={true}
+          contextMenuHidden={false}
         />
 
         <TouchableOpacity
@@ -104,7 +81,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         >
           <Text style={styles.sendButtonText}>▶</Text>
         </TouchableOpacity>
-      </XStack>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -127,6 +104,8 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.lg,
   },
   inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#0a0a0f',
     borderRadius: borderRadius.lg,
     borderWidth: 1,
@@ -134,6 +113,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     minHeight: 50,
+    gap: spacing.sm,
   },
   inputFocused: {
     borderColor: '#00ffff',
