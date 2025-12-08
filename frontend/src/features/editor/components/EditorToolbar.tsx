@@ -1,17 +1,12 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
-import { XStack, YStack } from 'tamagui';
-import { Button } from '../../../shared/components/Button';
-import { colors, spacing, borderRadius, createShadow, createTextShadow } from '../../../shared/styles/theme';
-import { globalStyles } from '../../../shared/styles/globalStyles';
+import { XStack } from 'tamagui';
+import { spacing, borderRadius, createShadow, createTextShadow } from '../../../shared/styles/theme';
 
 interface EditorToolbarProps {
   language: string;
-  onLanguageChange: (lang: string) => void;
   onRun?: () => void;
   onSubmit?: () => void;
-  isDirty?: boolean;
-  lastSavedAt?: string | null;
 }
 
 /**
@@ -20,11 +15,8 @@ interface EditorToolbarProps {
  */
 export const EditorToolbar: React.FC<EditorToolbarProps> = ({
   language,
-  onLanguageChange,
   onRun,
   onSubmit,
-  isDirty,
-  lastSavedAt,
 }) => {
   const [pressedButton, setPressedButton] = useState<string | null>(null);
   const pulseAnim = React.useRef(new Animated.Value(1)).current;
@@ -98,18 +90,6 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
           </TouchableOpacity>
         </Animated.View>
 
-        {/* AI 힌트 버튼 */}
-        <TouchableOpacity
-          style={[
-            styles.actionButton,
-            styles.aiButton,
-            pressedButton === 'ai' && styles.buttonPressed,
-          ]}
-          onPress={() => handlePress('ai', () => {})}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.buttonText}>🤖 AI</Text>
-        </TouchableOpacity>
       </XStack>
     </View>
   );
@@ -163,11 +143,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 255, 255, 0.15)',
     borderColor: '#00ffff',
     ...createShadow(0, 0, 12, 0, '#00ffff', 0.8),
-  },
-  aiButton: {
-    backgroundColor: 'rgba(255, 0, 255, 0.1)',
-    borderColor: '#ff00ff',
-    ...createShadow(0, 0, 8, 0, '#ff00ff', 0.5),
   },
   buttonText: {
     color: '#ffffff',

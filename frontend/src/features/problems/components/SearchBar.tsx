@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { View, TextInput, StyleSheet } from 'react-native';
-import { XStack } from 'tamagui';
+import { StyleSheet } from 'react-native';
+
 import { Input } from '../../../shared/components/Input';
-import { colors, spacing, borderRadius } from '../../../shared/styles/theme';
+import { colors } from '../../../shared/styles/theme';
 import { useDebounce } from '../../../shared/hooks/useDebounce';
 
 interface SearchBarProps {

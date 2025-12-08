@@ -1,15 +1,14 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, Animated, Dimensions } from 'react-native';
-import { YStack, XStack } from 'tamagui';
-import { CodeMirrorWebView } from './CodeMirrorWebView';
+import { View, Text, StyleSheet, Animated } from 'react-native';
+import { XStack } from 'tamagui';
+import { NativeCodeEditor } from './NativeCodeEditor';
 import { EditorToolbar } from './EditorToolbar';
 import { EditorTabs, EditorTabType } from './EditorTabs';
 import { EditorChatPanel } from './EditorChatPanel';
 import { ProblemHeaderBar } from '../../problems/components/ProblemHeaderBar';
 import { useCodeEditor } from '../hooks/useCodeEditor';
 import { useProblemDetail } from '../../problems/hooks/useProblemDetail';
-import { colors, spacing, createShadow, createTextShadow } from '../../../shared/styles/theme';
-import { globalStyles } from '../../../shared/styles/globalStyles';
+import { spacing, createShadow, createTextShadow } from '../../../shared/styles/theme';
 import { Problem } from '../../../shared/types/api.types';
 
 interface CodeEditorProps {
@@ -20,7 +19,7 @@ interface CodeEditorProps {
   onProblemPress?: () => void;
 }
 
-const { width } = Dimensions.get('window');
+
 
 /**
  * 미래지향적인 코드 에디터 화면
@@ -33,14 +32,14 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   onSubmit,
   onProblemPress,
 }) => {
-  const { code, language, setCode, setLanguage, isDirty, lastSavedAt } = useCodeEditor(problemId);
+  const { code, language, setCode, isDirty, lastSavedAt } = useCodeEditor(problemId);
 
   // 탭 상태
   const [activeTab, setActiveTab] = useState<EditorTabType>('code');
   const [hasUnreadMessages, setHasUnreadMessages] = useState(false);
 
   // 외부에서 problem이 전달되면 fetch하지 않음
-  const shouldFetch = !externalProblem;
+
   const { problem: fetchedProblem, isLoading: isProblemLoading } = useProblemDetail(problemId);
   const problem = externalProblem ?? fetchedProblem;
   const glowAnimation = useRef(new Animated.Value(0)).current;
@@ -109,6 +108,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     <View style={styles.container}>
       {/* 홀로그램 스캔라인 효과 - 세련된 그라데이션 */}
       <Animated.View
+        pointerEvents="none"
         style={[
           styles.scanline,
           {
@@ -120,6 +120,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
 
       {/* 네온 테두리 글로우 */}
       <Animated.View
+        pointerEvents="none"
         style={[
           styles.glowBorder,
           {
@@ -148,20 +149,16 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
           {/* 에디터 툴바 */}
           <EditorToolbar
             language={language}
-            onLanguageChange={setLanguage}
             onRun={onRun}
             onSubmit={onSubmit}
-            isDirty={isDirty}
-            lastSavedAt={lastSavedAt}
           />
 
           {/* 코드 에디터 영역 */}
           <View style={styles.editorContainer}>
-            <CodeMirrorWebView
+            <NativeCodeEditor
               code={code}
               language={language}
               onChange={setCode}
-              theme="cyberpunk"
             />
           </View>
 

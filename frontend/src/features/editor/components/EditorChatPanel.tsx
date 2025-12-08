@@ -1,11 +1,11 @@
 import React, { useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Animated, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Animated } from 'react-native';
 import { YStack, XStack } from 'tamagui';
 import { ChatBubble } from '../../ai-chat/components/ChatBubble';
 import { ChatInput } from '../../ai-chat/components/ChatInput';
 import { useAIChat } from '../../ai-chat/hooks/useAIChat';
 import { Loading } from '../../../shared/components/Loading';
-import { colors, spacing, createShadow } from '../../../shared/styles/theme';
+import { spacing, createShadow } from '../../../shared/styles/theme';
 import { globalStyles } from '../../../shared/styles/globalStyles';
 
 interface EditorChatPanelProps {
@@ -77,11 +77,7 @@ export const EditorChatPanel: React.FC<EditorChatPanelProps> = ({
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
-    >
+    <View style={styles.container}>
       {/* 헤더 */}
       <View style={styles.header}>
         <XStack alignItems="center" gap={spacing.sm}>
@@ -110,7 +106,8 @@ export const EditorChatPanel: React.FC<EditorChatPanelProps> = ({
         ref={scrollViewRef}
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
+        keyboardShouldPersistTaps="always"
+        keyboardDismissMode="none"
         showsVerticalScrollIndicator={false}
       >
         {!messages || messages.length === 0 ? (
@@ -129,7 +126,6 @@ export const EditorChatPanel: React.FC<EditorChatPanelProps> = ({
               <ChatBubble
                 key={message?.id || `msg-${index}`}
                 message={message}
-                onRequestReview={handleRequestReview}
               />
             ))}
           </YStack>
@@ -167,7 +163,7 @@ export const EditorChatPanel: React.FC<EditorChatPanelProps> = ({
         disabled={isSending}
         placeholder="코드에 대해 질문하세요..."
       />
-    </KeyboardAvoidingView>
+    </View>
   );
 };
 

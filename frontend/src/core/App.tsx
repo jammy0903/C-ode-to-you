@@ -12,6 +12,7 @@
  *
  * @providers (order matters)
  * - GestureHandlerRootView: Gesture handler root (outermost)
+ * - KeyboardProvider: Keyboard handling provider (react-native-keyboard-controller)
  * - SafeAreaProvider: Safe area context provider
  * - TamaguiProvider: UI component library provider
  * - QueryClientProvider: TanStack Query state management
@@ -30,6 +31,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { StyleSheet } from 'react-native';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 import tamaguiConfig from '../../tamagui.config';
 import { queryClient } from '../shared/lib/queryClient';
 import { useFontLoader } from '../shared/utils/fontLoader';
@@ -56,18 +58,20 @@ export default function App() {
 
   return (
     <GestureHandlerRootView style={styles.container}>
-      <SafeAreaProvider>
-        <TamaguiProvider config={tamaguiConfig}>
-          <QueryClientProvider client={queryClient}>
-            <ThemeProvider>
-              <AuthProvider>
-                <RootNavigator />
-                <StatusBar style="light" />
-              </AuthProvider>
-            </ThemeProvider>
-          </QueryClientProvider>
-        </TamaguiProvider>
-      </SafeAreaProvider>
+      <KeyboardProvider>
+        <SafeAreaProvider>
+          <TamaguiProvider config={tamaguiConfig}>
+            <QueryClientProvider client={queryClient}>
+              <ThemeProvider>
+                <AuthProvider>
+                  <RootNavigator />
+                  <StatusBar style="light" />
+                </AuthProvider>
+              </ThemeProvider>
+            </QueryClientProvider>
+          </TamaguiProvider>
+        </SafeAreaProvider>
+      </KeyboardProvider>
     </GestureHandlerRootView>
   );
 }

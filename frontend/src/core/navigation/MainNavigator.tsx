@@ -36,6 +36,9 @@ const ProblemsStack = () => {
         headerTitleStyle: {
           fontFamily: 'Orbitron-SemiBold',
         },
+        // Android 키보드 문제 해결
+        animation: 'fade',
+        fullScreenGestureEnabled: false,
       }}
     >
       <Stack.Screen 

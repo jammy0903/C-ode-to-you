@@ -26,7 +26,7 @@
  */
 
 import { useState, useCallback } from 'react';
-import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery } from '@tanstack/react-query';
 import { repositories } from '../../../shared/repositories';
 import { GetProblemsParams } from '../../../shared/api/endpoints/problems.api';
 import { getErrorMessage } from '../../../shared/utils/error';
@@ -45,7 +45,7 @@ const DEFAULT_FILTERS: GetProblemsParams = {
 };
 
 export const useProblems = () => {
-  const queryClient = useQueryClient();
+
   const [filters, setFiltersState] = useState<GetProblemsParams>(DEFAULT_FILTERS);
   const [searchQuery, setSearchQuery] = useState<string | null>(null);
 

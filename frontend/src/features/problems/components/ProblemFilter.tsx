@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { XStack, YStack } from 'tamagui';
 import { GetProblemsParams } from '../../../shared/api/endpoints/problems.api';
 import { colors, spacing, borderRadius } from '../../../shared/styles/theme';

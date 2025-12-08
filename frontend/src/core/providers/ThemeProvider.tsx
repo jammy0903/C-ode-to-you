@@ -1,7 +1,6 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 import { useColorScheme } from 'react-native';
-import { useTheme as useTamaguiTheme } from 'tamagui';
-import { colors } from '../../shared/styles/theme';
+
 
 type ThemeMode = 'light' | 'dark' | 'system';
 
