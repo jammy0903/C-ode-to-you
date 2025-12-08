@@ -30,14 +30,58 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { QueryClientProvider } from '@tanstack/react-query';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, View, Text } from 'react-native';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
+import { useState, useEffect } from 'react';
 import tamaguiConfig from '../../tamagui.config';
 import { queryClient } from '../shared/lib/queryClient';
 import { useFontLoader } from '../shared/utils/fontLoader';
 import { AuthProvider } from './providers/AuthProvider';
 import { ThemeProvider } from './providers/ThemeProvider';
 import { RootNavigator } from './navigation/RootNavigator';
+import { getItem } from '../shared/utils/storage';
+import { STORAGE_KEYS } from '../shared/constants/config';
+
+// DEV: 토큰 디버그 배너
+const TokenDebugBanner = () => {
+  const [token, setToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    const checkToken = async () => {
+      const t = await getItem(STORAGE_KEYS.ACCESS_TOKEN);
+      setToken(t);
+    };
+    checkToken();
+    const interval = setInterval(checkToken, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <View style={[debugStyles.banner, { backgroundColor: token ? 'rgba(0,200,0,0.9)' : 'rgba(255,0,0,0.9)' }]}>
+      <Text style={debugStyles.text} numberOfLines={1}>
+        {token ? `🔑 ${token.substring(0, 15)}...` : '❌ NO TOKEN'}
+      </Text>
+    </View>
+  );
+};
+
+const debugStyles = StyleSheet.create({
+  banner: {
+    position: 'absolute',
+    top: 35,
+    right: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    zIndex: 9999,
+    maxWidth: 180,
+  },
+  text: {
+    color: '#fff',
+    fontSize: 9,
+    fontFamily: 'monospace',
+  },
+});
 
 export default function App() {
   console.log('[App] Rendering...');
@@ -65,6 +109,7 @@ export default function App() {
               <ThemeProvider>
                 <AuthProvider>
                   <RootNavigator />
+                  <TokenDebugBanner />
                   <StatusBar style="light" />
                 </AuthProvider>
               </ThemeProvider>

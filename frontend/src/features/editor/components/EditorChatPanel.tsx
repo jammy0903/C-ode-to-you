@@ -26,7 +26,7 @@ export const EditorChatPanel: React.FC<EditorChatPanelProps> = ({
   const { messages, isLoading, isSending, error, sendMessage, requestReview } = useAIChat(problemId);
   const scrollViewRef = useRef<any>(null);
   const pulseAnim = useRef(new Animated.Value(1)).current;
-  const prevMessageCount = useRef(messages.length);
+  const prevMessageCount = useRef(messages?.length ?? 0);
 
   // AI 응답 대기 중 펄스 애니메이션
   useEffect(() => {
@@ -52,14 +52,15 @@ export const EditorChatPanel: React.FC<EditorChatPanelProps> = ({
 
   // 새 메시지 추가 시 스크롤 및 알림
   useEffect(() => {
-    if (messages.length > prevMessageCount.current) {
+    const currentLength = messages?.length ?? 0;
+    if (currentLength > prevMessageCount.current) {
       onNewMessage?.();
       setTimeout(() => {
         scrollViewRef.current?.scrollToEnd({ animated: true });
       }, 100);
     }
-    prevMessageCount.current = messages.length;
-  }, [messages.length, onNewMessage]);
+    prevMessageCount.current = currentLength;
+  }, [messages?.length, onNewMessage]);
 
   const handleSend = async (content: string) => {
     // 현재 코드 컨텍스트 포함
@@ -72,7 +73,7 @@ export const EditorChatPanel: React.FC<EditorChatPanelProps> = ({
     }
   };
 
-  if (isLoading && messages.length === 0) {
+  if (isLoading && (!messages || messages.length === 0)) {
     return <Loading fullScreen={false} message="채팅 준비 중..." />;
   }
 
