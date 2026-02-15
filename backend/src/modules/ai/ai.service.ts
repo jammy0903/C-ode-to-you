@@ -1,39 +1,7 @@
-/**
- * @file ai.service.ts
- * @description AI chat and code review service
- *
- * @principles
- * - SRP: ✅ Handles only AI-related features (chat, code review)
- * - DIP: ⚠️ Directly instantiates OllamaService and ProblemRepository
- * - Composition: ✅ Uses OllamaService for LLM, Prisma for conversation persistence
- * - Security: ✅ System prompts prevent off-topic responses and enforce Korean-only coding help
- *
- * @functions
- * - getChatHistory(userId, problemId): Promise<ChatHistoryResponse> - Get or create conversation history
- * - sendChatMessage(userId, problemId, request): Promise<ChatResponse> - Send message and get AI response
- * - requestCodeReview(userId, problemId, request): Promise<CodeReviewResponse> - Get structured code review
- *
- * @dependencies
- * - OllamaService: LLM generation service
- * - ProblemRepository: Problem validation
- * - Prisma: Conversation and message persistence
- *
- * @aiPrompts
- * - Chat system prompt (lines 113-132): Enforces C language focus, blocks off-topic conversations
- * - Review system prompt (lines 178-198): Enforces structured JSON code review format
- *
- * @duplicateLogic
- * - ✅ Problem validation consolidated - uses ProblemRepository.validateAndGet()
- *
- * @notes
- * - Korean language enforced for user-facing content
- * - Context limited to last 5 messages (line 136)
- * - Fallback code review if JSON parsing fails (lines 228-239)
- */
-
 import { prisma } from '../../config/database';
 import { ProblemRepository } from '../../database/repositories/problem.repository';
-import { OllamaService } from './ollama.service';
+import { ClaudeService } from './claude.service';
+import { decrypt } from '../../utils/encryption';
 import {
   ChatRequest,
   ChatResponse,
@@ -42,16 +10,58 @@ import {
   CodeReviewResponse,
   MessageRole,
 } from './ai.types';
-import { ApiError } from '../../utils/response';
 import logger from '../../utils/logger';
 
 export class AIService {
-  private ollamaService: OllamaService;
+  private claudeService: ClaudeService;
   private problemRepo: ProblemRepository;
 
   constructor() {
-    this.ollamaService = new OllamaService();
+    this.claudeService = new ClaudeService();
     this.problemRepo = new ProblemRepository();
+  }
+
+  /**
+   * Retrieve the user's decrypted AI API key from settings.
+   * Falls back to server-level AI_API_KEY env var if configured.
+   */
+  private async getApiKey(userId: string): Promise<string> {
+    const settings = await prisma.userSettings.findUnique({
+      where: { userId },
+    });
+
+    const encryptedKey = (settings?.aiSettings as Record<string, unknown>)
+      ?.apiKey as string | undefined;
+
+    if (encryptedKey) {
+      try {
+        return decrypt(encryptedKey);
+      } catch {
+        logger.warn(`Failed to decrypt AI API key for user ${userId}`);
+      }
+    }
+
+    // Fallback to server-level key
+    if (process.env.AI_API_KEY) {
+      return process.env.AI_API_KEY;
+    }
+
+    throw new Error(
+      'AI API 키가 설정되지 않았습니다. 설정에서 Anthropic API 키를 등록해주세요.'
+    );
+  }
+
+  /**
+   * Get the user's preferred AI model from settings
+   */
+  private async getModel(userId: string): Promise<string | undefined> {
+    const settings = await prisma.userSettings.findUnique({
+      where: { userId },
+    });
+
+    return (settings?.aiSettings as Record<string, unknown>)?.model as
+      | string
+      | undefined;
   }
 
   /**
@@ -61,26 +71,16 @@ export class AIService {
     userId: string,
     problemId: string
   ): Promise<ChatHistoryResponse> {
-    // Validate problem exists
     await this.problemRepo.validateAndGet(problemId);
 
-    // Find or create conversation
     let conversation = await prisma.aiConversation.findFirst({
-      where: {
-        userId,
-        problemId,
-      },
+      where: { userId, problemId },
       include: {
-        messages: {
-          orderBy: {
-            createdAt: 'asc',
-          },
-        },
+        messages: { orderBy: { createdAt: 'asc' } },
       },
     });
 
     if (!conversation) {
-      // Create new conversation with welcome message
       conversation = await prisma.aiConversation.create({
         data: {
           userId,
@@ -88,16 +88,13 @@ export class AIService {
           messages: {
             create: {
               role: 'assistant',
-              content: `안녕하세요! 저는 C 언어 학습을 도와주는 AI 조교입니다. 이 문제나 C 언어에 대해 무엇이든 물어보세요!`,
+              content:
+                '안녕하세요! 저는 C 언어 학습을 도와주는 AI 조교입니다. 이 문제나 C 언어에 대해 무엇이든 물어보세요!',
             },
           },
         },
         include: {
-          messages: {
-            orderBy: {
-              createdAt: 'asc',
-            },
-          },
+          messages: { orderBy: { createdAt: 'asc' } },
         },
       });
     }
@@ -120,10 +117,10 @@ export class AIService {
     problemId: string,
     request: ChatRequest
   ): Promise<ChatResponse> {
-    // Validate problem exists
     const problem = await this.problemRepo.validateAndGet(problemId);
+    const apiKey = await this.getApiKey(userId);
+    const model = await this.getModel(userId);
 
-    // Get or create conversation
     const chatHistory = await this.getChatHistory(userId, problemId);
     const conversationId = request.conversationId || chatHistory.conversationId;
 
@@ -136,7 +133,6 @@ export class AIService {
       },
     });
 
-    // Build system prompt - 코딩 외 다른 얘기 차단
     const systemPrompt = `당신은 C 언어 학습을 돕는 전문 코딩 조교입니다.
 
 **중요 규칙:**
@@ -158,20 +154,24 @@ export class AIService {
 
 한국어로 답변하세요.`;
 
-    // Build conversation context
     const contextMessages = chatHistory.messages
-      .slice(-5) // Last 5 messages for context
+      .slice(-5)
       .map((msg) => `${msg.role}: ${msg.content}`)
       .join('\n\n');
 
     const prompt = `${contextMessages}\n\nuser: ${request.message}${
-      request.code ? `\n\n[현재 작성 중인 코드]\n\`\`\`c\n${request.code}\n\`\`\`` : ''
-    }\n\nassistant:`;
+      request.code
+        ? `\n\n[현재 작성 중인 코드]\n\`\`\`c\n${request.code}\n\`\`\``
+        : ''
+    }`;
 
-    // Get AI response
-    const aiResponse = await this.ollamaService.generate(prompt, systemPrompt);
+    const aiResponse = await this.claudeService.generate(
+      apiKey,
+      prompt,
+      systemPrompt,
+      { model }
+    );
 
-    // Save assistant message
     const message = await prisma.aiMessage.create({
       data: {
         conversationId,
@@ -180,7 +180,6 @@ export class AIService {
       },
     });
 
-    // Return in ChatMessage format for frontend compatibility
     return {
       id: message.id,
       role: 'assistant' as const,
@@ -197,10 +196,10 @@ export class AIService {
     problemId: string,
     request: CodeReviewRequest
   ): Promise<CodeReviewResponse> {
-    // Validate problem exists
     const problem = await this.problemRepo.validateAndGet(problemId);
+    const apiKey = await this.getApiKey(userId);
+    const model = await this.getModel(userId);
 
-    // Build system prompt for code review - 코드 리뷰만 수행
     const systemPrompt = `당신은 C 언어 코드를 리뷰하는 전문가입니다.
 
 **중요 규칙:**
@@ -235,11 +234,14 @@ JSON 형식으로만 답변해주세요.`;
 
     logger.info(`Requesting code review for problem ${problem.number}`);
 
-    // Get AI response
-    const aiResponse = await this.ollamaService.generate(prompt, systemPrompt);
+    const aiResponse = await this.claudeService.generate(
+      apiKey,
+      prompt,
+      systemPrompt,
+      { model }
+    );
 
     try {
-      // Try to parse JSON response
       const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
         throw new Error('No JSON found in response');
@@ -250,7 +252,6 @@ JSON 형식으로만 답변해주세요.`;
     } catch (error) {
       logger.error('Failed to parse code review response:', error);
 
-      // Fallback response
       return {
         summary: '코드 리뷰를 완료했습니다.',
         strengths: [
@@ -264,5 +265,12 @@ JSON 형식으로만 답변해주세요.`;
         ],
       };
     }
+  }
+
+  /**
+   * Validate an Anthropic API key
+   */
+  async validateApiKey(apiKey: string): Promise<boolean> {
+    return this.claudeService.healthCheck(apiKey);
   }
 }

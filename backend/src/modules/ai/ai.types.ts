@@ -25,9 +25,10 @@ export interface ChatRequest {
  * Chat response
  */
 export interface ChatResponse {
-  conversationId: string;
-  response: string;
-  timestamp: Date;
+  id: string;
+  role: 'assistant';
+  content: string;
+  createdAt: string;
 }
 
 /**
@@ -66,34 +67,10 @@ export interface CodeReviewResponse {
 }
 
 /**
- * Ollama API request
+ * Claude API generation options
  */
-export interface OllamaGenerateRequest {
-  model: string;
-  prompt: string;
-  stream?: boolean;
-  system?: string;
-  context?: number[];
-  options?: {
-    temperature?: number;
-    top_p?: number;
-    top_k?: number;
-    num_predict?: number;
-  };
-}
-
-/**
- * Ollama API response
- */
-export interface OllamaGenerateResponse {
-  model: string;
-  created_at: string;
-  response: string;
-  done: boolean;
-  context?: number[];
-  total_duration?: number;
-  load_duration?: number;
-  prompt_eval_count?: number;
-  eval_count?: number;
-  eval_duration?: number;
+export interface ClaudeGenerateOptions {
+  model?: string;
+  maxTokens?: number;
+  temperature?: number;
 }

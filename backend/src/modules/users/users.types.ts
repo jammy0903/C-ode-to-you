@@ -49,6 +49,9 @@ export interface UserSettings {
   };
   ai: {
     hintLevel: 'beginner' | 'intermediate' | 'advanced';
+    apiKey?: string; // masked for display
+    model?: string;
+    provider?: string;
   };
   github: {
     autoCommit: boolean;
@@ -64,7 +67,7 @@ export interface UserSettings {
  */
 export interface UpdateSettingsRequest {
   editor?: Partial<UserSettings['editor']>;
-  ai?: Partial<UserSettings['ai']>;
+  ai?: Partial<UserSettings['ai']> & { apiKey?: string };
   github?: Partial<UserSettings['github']>;
   notifications?: Partial<UserSettings['notifications']>;
 }

@@ -19,6 +19,13 @@ router.use(authenticate);
 router.use(aiLimiter);
 
 /**
+ * @route   POST /api/ai/validate-key
+ * @desc    Validate an Anthropic API key
+ * @access  Private
+ */
+router.post('/validate-key', aiController.validateApiKey);
+
+/**
  * @route   GET /api/ai/chat/:problemId/history
  * @desc    Get chat history for a problem
  * @access  Private

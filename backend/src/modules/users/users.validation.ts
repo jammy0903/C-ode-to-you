@@ -38,6 +38,19 @@ export const updateSettingsSchema = z.object({
           .enum(['beginner', 'intermediate', 'advanced'])
           .optional()
           .describe('AI hint difficulty level'),
+        apiKey: z
+          .string()
+          .min(1)
+          .optional()
+          .describe('Anthropic API key (stored encrypted)'),
+        model: z
+          .string()
+          .optional()
+          .describe('AI model name (e.g. claude-sonnet-4-5-20250929)'),
+        provider: z
+          .enum(['anthropic'])
+          .optional()
+          .describe('AI provider'),
       })
       .optional(),
     github: z

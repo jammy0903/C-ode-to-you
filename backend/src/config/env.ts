@@ -35,10 +35,12 @@ const envSchema = z.object({
   GITHUB_CLIENT_SECRET: z.string(),
   GITHUB_CALLBACK_URL: z.string().url(),
 
-  // AI Model
-  AI_API_URL: z.string().url(),
-  AI_API_KEY: z.string().optional(),
-  AI_MODEL_NAME: z.string().default('qwen2.5-coder'),
+  // AI (Claude API)
+  AI_API_KEY: z.string().optional(), // Server-level fallback Anthropic API key
+  AI_MODEL_NAME: z.string().default('claude-sonnet-4-5-20250929'),
+
+  // Encryption (for encrypting user API keys)
+  ENCRYPTION_KEY: z.string().min(16),
 
   // Baekjoon API (optional)
   BAEKJOON_API_URL: z.string().url().optional().or(z.literal('')),
@@ -65,7 +67,7 @@ const parseEnv = () => {
     return envSchema.parse(process.env);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      console.error('❌ Invalid environment variables:');
+      console.error('Invalid environment variables:');
       error.errors.forEach((err) => {
         console.error(`  ${err.path.join('.')}: ${err.message}`);
       });

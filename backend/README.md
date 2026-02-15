@@ -60,17 +60,13 @@ npm run prisma:migrate
 npm run prisma:seed
 ```
 
-### 4. AI Service Setup (Ollama)
+### 4. AI Service Setup (Claude API)
 
-The AI chat and code review features require Ollama with the Kanana Nano model.
+AI 기능은 Anthropic Claude API를 사용한다.
+사용자가 자신의 API 키를 등록하는 BYOK(Bring Your Own Key) 방식이며,
+서버 폴백 키는 `.env`의 `AI_API_KEY`에 설정할 수 있다.
 
-**Quick setup:**
-
-```bash
-./scripts/setup-ollama-direct.sh
-```
-
-For detailed instructions, see [OLLAMA_SETUP.md](./OLLAMA_SETUP.md).
+API 키 발급: [console.anthropic.com](https://console.anthropic.com)
 
 ### 5. Run Development Server
 
@@ -111,7 +107,8 @@ See `/docs/database-schema.md` in the root project directory.
 | `JWT_SECRET` | Secret for JWT signing | Yes |
 | `KAKAO_CLIENT_ID` | Kakao OAuth client ID | Yes |
 | `GOOGLE_CLIENT_ID` | Google OAuth client ID | Yes |
-| `OLLAMA_BASE_URL` | Ollama API endpoint | Yes |
+| `ENCRYPTION_KEY` | API 키 암호화 마스터 키 (16자+) | Yes |
+| `AI_API_KEY` | 서버 폴백용 Anthropic API 키 | No |
 
 See `.env.example` for complete list.
 

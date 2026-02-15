@@ -52,8 +52,10 @@
  * - ✅ No duplication - complex but well-structured
  */
 
+import { Prisma } from '@prisma/client';
 import { prisma } from '../../config/database';
 import { Provider } from '@prisma/client';
+import { encrypt, maskApiKey, decrypt } from '../../utils/encryption';
 
 export class UserRepository {
   /**
@@ -332,6 +334,8 @@ export class UserRepository {
         },
         ai: {
           hintLevel: 'beginner' as const,
+          model: 'claude-sonnet-4-5-20250929',
+          provider: 'anthropic',
         },
         github: {
           autoCommit: true,
@@ -343,14 +347,34 @@ export class UserRepository {
       };
     }
 
+    // Mask the AI API key for display
+    const aiSettings = settings.aiSettings as Record<string, unknown>;
+    const maskedAi: Record<string, unknown> = {
+      hintLevel: aiSettings?.hintLevel || 'beginner',
+      model: aiSettings?.model || 'claude-sonnet-4-5-20250929',
+      provider: aiSettings?.provider || 'anthropic',
+    };
+
+    if (aiSettings?.apiKey) {
+      try {
+        const decryptedKey = decrypt(aiSettings.apiKey as string);
+        maskedAi.apiKey = maskApiKey(decryptedKey);
+      } catch {
+        maskedAi.apiKey = '****';
+      }
+    }
+
     return {
       editor: settings.editorSettings as {
         fontSize: number;
         theme: 'light' | 'dark';
         tabSize: number;
       },
-      ai: settings.aiSettings as {
+      ai: maskedAi as {
         hintLevel: 'beginner' | 'intermediate' | 'advanced';
+        apiKey?: string;
+        model?: string;
+        provider?: string;
       },
       github: settings.githubSettings as {
         autoCommit: boolean;
@@ -384,10 +408,20 @@ export class UserRepository {
       ...(settings.editor || {}),
     };
 
-    const aiSettings = {
-      ...(currentSettings?.aiSettings as Record<string, unknown> || {}),
-      ...(settings.ai || {}),
+    // Handle AI settings with API key encryption
+    const existingAiSettings = (currentSettings?.aiSettings as Record<string, unknown>) || {};
+    const newAiSettings = settings.ai || {};
+    const aiSettingsToSave: Record<string, unknown> = {
+      ...existingAiSettings,
+      ...newAiSettings,
     };
+
+    // Encrypt the API key if provided as plaintext
+    if (newAiSettings.apiKey && typeof newAiSettings.apiKey === 'string') {
+      aiSettingsToSave.apiKey = encrypt(newAiSettings.apiKey as string);
+    }
+
+    const aiSettings = aiSettingsToSave;
 
     const githubSettings = {
       ...(currentSettings?.githubSettings as Record<string, unknown> || {}),
@@ -402,17 +436,17 @@ export class UserRepository {
     return prisma.userSettings.upsert({
       where: { userId },
       update: {
-        editorSettings,
-        aiSettings,
-        githubSettings,
-        notificationSettings,
+        editorSettings: editorSettings as Prisma.InputJsonValue,
+        aiSettings: aiSettings as Prisma.InputJsonValue,
+        githubSettings: githubSettings as Prisma.InputJsonValue,
+        notificationSettings: notificationSettings as Prisma.InputJsonValue,
       },
       create: {
         userId,
-        editorSettings,
-        aiSettings,
-        githubSettings,
-        notificationSettings,
+        editorSettings: editorSettings as Prisma.InputJsonValue,
+        aiSettings: aiSettings as Prisma.InputJsonValue,
+        githubSettings: githubSettings as Prisma.InputJsonValue,
+        notificationSettings: notificationSettings as Prisma.InputJsonValue,
       },
     });
   }

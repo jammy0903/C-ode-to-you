@@ -1,0 +1,26 @@
+{
+  "name": "@c-ode-to-you/sdk",
+  "version": "0.1.0",
+  "description": "Client SDK for C-ode to you API service",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run clean && npm run build"
+  },
+  "keywords": [
+    "c-language",
+    "learning",
+    "api",
+    "sdk"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.7.0"
+  }
+}

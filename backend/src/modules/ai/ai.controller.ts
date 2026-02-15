@@ -1,29 +1,6 @@
-/**
- * @file ai.controller.ts
- * @description HTTP request handlers for AI chat/review endpoints
- * @layer Controller - Request/Response handling only, delegates to Service
- *
- * @endpoints (3 total)
- * 1. GET /api/ai/chat/:problemId/history - Get chat conversation history
- * 2. POST /api/ai/chat/:problemId - Send chat message, get AI response
- * 3. POST /api/ai/review/:problemId - Request code review from AI
- *
- * @patterns
- * - All methods use asyncHandler wrapper
- * - Required auth: userId from req.userId!
- * - Request body passed directly to service (ChatRequest, CodeReviewRequest types)
- *
- * @requestParsing
- * - URL params: problemId (extracted from route)
- * - Body: Direct pass-through (chatRequest, reviewRequest)
- *
- * @duplicateLogic
- * - ✅ No duplication - minimal controller logic
- */
-
 import { Request, Response } from 'express';
 import { AIService } from './ai.service';
-import { sendSuccess } from '../../utils/response';
+import { sendSuccess, sendError } from '../../utils/response';
 import { asyncHandler } from '../../middleware/async-handler';
 
 export class AIController {
@@ -35,10 +12,9 @@ export class AIController {
 
   /**
    * GET /api/ai/chat/:problemId/history
-   * Get chat history for a problem
    */
   getChatHistory = asyncHandler(async (req: Request, res: Response) => {
-    const { problemId } = req.params;
+    const problemId = req.params.problemId as string;
     const userId = req.userId!;
 
     const history = await this.aiService.getChatHistory(userId, problemId);
@@ -48,10 +24,9 @@ export class AIController {
 
   /**
    * POST /api/ai/chat/:problemId
-   * Send chat message and get AI response
    */
   sendChatMessage = asyncHandler(async (req: Request, res: Response) => {
-    const { problemId } = req.params;
+    const problemId = req.params.problemId as string;
     const userId = req.userId!;
     const chatRequest = req.body;
 
@@ -62,15 +37,30 @@ export class AIController {
 
   /**
    * POST /api/ai/review/:problemId
-   * Request code review
    */
   requestCodeReview = asyncHandler(async (req: Request, res: Response) => {
-    const { problemId } = req.params;
+    const problemId = req.params.problemId as string;
     const userId = req.userId!;
     const reviewRequest = req.body;
 
     const review = await this.aiService.requestCodeReview(userId, problemId, reviewRequest);
 
     return sendSuccess(res, { review });
+  });
+
+  /**
+   * POST /api/ai/validate-key
+   * Validate an Anthropic API key
+   */
+  validateApiKey = asyncHandler(async (req: Request, res: Response) => {
+    const { apiKey } = req.body;
+
+    if (!apiKey || typeof apiKey !== 'string') {
+      return sendError(res, 'VALIDATION_ERROR', 'API key is required', 400);
+    }
+
+    const isValid = await this.aiService.validateApiKey(apiKey);
+
+    return sendSuccess(res, { valid: isValid });
   });
 }

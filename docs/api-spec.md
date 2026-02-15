@@ -567,7 +567,38 @@ GET /api/submissions/history
 
 ## 4. AI Assistance
 
-### 4.1. Get Chat History
+> **AI Provider**: Anthropic Claude API (BYOK - Bring Your Own Key)
+>
+> Users must register their own Anthropic API key via `PUT /api/users/me/settings`.
+> The key is encrypted (AES-256-GCM) and stored in the database.
+> A server-level fallback key can be configured via `AI_API_KEY` environment variable.
+
+### 4.1. Validate API Key
+```http
+POST /api/ai/validate-key
+```
+🔒 **Authentication Required**
+
+**Request Body:**
+```json
+{
+  "apiKey": "sk-ant-api03-..."
+}
+```
+
+**Response:** `200 OK`
+```json
+{
+  "success": true,
+  "data": {
+    "valid": true
+  }
+}
+```
+
+---
+
+### 4.3. Get Chat History
 ```http
 GET /api/ai/chat/:problemId/history
 ```
@@ -602,7 +633,7 @@ GET /api/ai/chat/:problemId/history
 
 ---
 
-### 4.2. Send Chat Message
+### 4.4. Send Chat Message
 ```http
 POST /api/ai/chat/:problemId
 ```
@@ -631,7 +662,7 @@ POST /api/ai/chat/:problemId
 
 ---
 
-### 4.3. Request Code Review
+### 4.5. Request Code Review
 ```http
 POST /api/ai/review/:problemId
 ```
@@ -856,7 +887,10 @@ GET /api/users/me/settings
       "tabSize": 2
     },
     "ai": {
-      "hintLevel": "beginner"
+      "hintLevel": "beginner",
+      "apiKey": "sk-ant-api03...xxxx",
+      "model": "claude-sonnet-4-5-20250929",
+      "provider": "anthropic"
     },
     "github": {
       "autoCommit": true
@@ -885,7 +919,9 @@ PUT /api/users/me/settings
     "theme": "light"
   },
   "ai": {
-    "hintLevel": "intermediate"
+    "hintLevel": "intermediate",
+    "apiKey": "sk-ant-api03-your-key-here",
+    "model": "claude-sonnet-4-5-20250929"
   }
 }
 ```
@@ -931,6 +967,57 @@ Triggered when a submission is judged.
     "verdict": "accepted"
   }
 }
+```
+
+---
+
+## Client SDK
+
+Install the SDK:
+```bash
+npm install @c-ode-to-you/sdk
+```
+
+### Usage
+
+```typescript
+import { CodToYouClient } from '@c-ode-to-you/sdk';
+
+const client = new CodToYouClient({
+  baseUrl: 'https://api.example.com',
+  token: 'jwt-token-here',
+});
+
+// Problems
+const problems = await client.problems.list({ difficulty: 'silver_5' });
+const problem = await client.problems.get('problem-uuid');
+
+// AI Chat
+const response = await client.ai.chat('problem-id', {
+  message: 'printf 함수 사용법 알려줘',
+  code: '#include <stdio.h>\nint main() { ... }',
+});
+
+// Code Review
+const review = await client.ai.review('problem-id', {
+  code: '#include <stdio.h>\nint main() { return 0; }',
+});
+
+// Validate API Key
+const { valid } = await client.ai.validateKey('sk-ant-api03-...');
+
+// User Settings (set AI key)
+await client.users.updateSettings({
+  ai: { apiKey: 'sk-ant-api03-...', model: 'claude-sonnet-4-5-20250929' },
+});
+
+// Submissions
+const submission = await client.submissions.submit('problem-id', {
+  code: '#include <stdio.h>\nint main() { ... }',
+});
+
+// User Stats
+const stats = await client.users.getStatistics();
 ```
 
 ---
